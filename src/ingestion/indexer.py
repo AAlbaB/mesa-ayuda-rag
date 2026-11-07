@@ -42,10 +42,13 @@ class VectorIndexer:
 
     def _make_chroma(self, persist_directory: str) -> Chroma:
         from langchain_community.vectorstores import Chroma as _Chroma  # lazy
+        # hnsw:space=cosine garantiza que similarity_search_with_relevance_scores
+        # devuelva valores en [0, 1] en lugar de distancias L2 negativas.
         return _Chroma(
             collection_name=_COLLECTION_NAME,
             embedding_function=self._get_embeddings(),
             persist_directory=persist_directory,
+            collection_metadata={"hnsw:space": "cosine"},
         )
 
     # ── API pública ───────────────────────────────────────────────────────────
