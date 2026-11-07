@@ -1,0 +1,56 @@
+# Secrets — nunca se suben
+.env
+.env.local
+
+# Índice vectorial generado (ChromaDB)
+chroma_db/
+*.index
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Testing y cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Linter / formatter cache
+.ruff_cache/
+.mypy_cache/
+
+# Logs de aplicación
+*.log
+logs/
+
+# Registro de preguntas sin respuesta (dato operativo, no código)
+unanswered_questions.csv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Documentos de la prueba técnica (no forman parte del proyecto)
+"Prueba técnica - Analista Transformación Digital.md"
+"Prueba técnica - Analista Transformación Digital.docx"
