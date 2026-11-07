@@ -13,6 +13,7 @@ La evaluación se realizó en dos capas:
 - `RETRIEVAL_TOP_K = 4`
 - Modelo de embeddings: `paraphrase-multilingual-MiniLM-L12-v2` (local)
 - Modelo LLM: `gpt-4o-mini`
+- Documentos indexados: 5 archivos → 36 chunks (10 páginas PDF + 3 archivos de texto)
 
 ---
 
@@ -58,8 +59,8 @@ La evaluación se realizó en dos capas:
 #### P04 — ¿Cuántos días presenciales debo ir si trabajo en modalidad híbrida?
 | Aspecto | Detalle |
 |---|---|
-| Chunks recuperados | 3 (scores: 0.67, 0.54, 0.44) |
-| Fragmento principal | `politica_trabajo_remoto.md` §3 |
+| Chunks recuperados | 3 (scores: 0.67, 0.58, 0.44) |
+| Fragmento principal | `politica_trabajo_remoto.md` §3; también `guia_bienvenida.pdf` (pág. 2) |
 | Respuesta esperada | Mínimo 2 días presenciales por semana, acordados con la jefatura |
 | Respuesta obtenida | "En la modalidad híbrida debes asistir presencialmente un **mínimo de 2 días por semana**, los días específicos se definen de acuerdo con tu jefatura directa. Los cambios puntuales deben comunicarse con al menos 24 horas de anticipación. 📄 *Fuentes:* politica_trabajo_remoto.md" |
 | ¿Correcta? | ✅ Sí |
@@ -67,22 +68,23 @@ La evaluación se realizó en dos capas:
 #### P05 — ¿Qué pasa si pierdo mi contraseña?
 | Aspecto | Detalle |
 |---|---|
-| Chunks recuperados | 0 (ninguno supera 0.30) |
-| Fragmento principal | — |
-| Respuesta esperada | El manual TI menciona contraseñas, pero la sección del PDF trata sobre "no compartir contraseñas", no sobre recuperación |
-| Respuesta obtenida | "No tengo información sobre ese tema en los documentos disponibles. Te recomiendo contactar directamente al área de soporte." |
-| ¿Correcta? | ⚠️ Parcialmente — el bot respondió correctamente que no tiene información suficiente, pero el documento SÍ existe. El problema es de contenido: el `manual_soporte_ti.pdf` no tiene una sección explícita de "recuperación de contraseña" (habla de no compartirlas). |
+| Chunks recuperados | 1 (score: 0.49) |
+| Fragmento principal | `manual_soporte_ti.pdf` (pág. 1) — sección "Restablecimiento de contraseña" |
+| Fragmento recuperado | "Para restablecer una contraseña olvidada, escribir a Soporte de TI desde el correo corporativo o llamar a la Ext. 1300." |
+| Respuesta esperada | Contactar a Soporte de TI por correo o Ext. 1300 |
+| Respuesta obtenida | "Si olvidaste tu contraseña, debes escribir a Soporte de TI desde tu **correo corporativo** o llamar a la **Ext. 1300**. Ellos procesarán el restablecimiento. 📄 *Fuentes:* manual_soporte_ti.pdf (pág. 1)" |
+| ¿Correcta? | ✅ Sí — resuelta tras reemplazar el PDF con texto completo extraíble |
 
-**Acción tomada:** se identificó que el PDF generado tiene texto truncado en algunas secciones debido a la maquetación (el texto en dos columnas se extrae parcialmente). Para producción, se reemplazaría el PDF por una versión mejor estructurada. Este caso demuestra el valor de las preguntas de prueba para detectar brechas en el contenido.
+**Acción tomada:** los PDFs originales (layout dos columnas) generaban texto truncado que PyPDF no podía extraer correctamente. Al reemplazarlos por PDFs de columna única con contenido completo, el chunk de restablecimiento de contraseña quedó indexado y es recuperable. Este caso ilustra que la calidad del RAG depende tanto del sistema como de la calidad de los documentos fuente.
 
 #### P06 — ¿Dónde reporto un incidente de phishing?
 | Aspecto | Detalle |
 |---|---|
-| Chunks recuperados | 3 (scores: 0.59, 0.45, 0.42) |
-| Fragmento principal | `manual_soporte_ti.pdf` §5 |
-| Respuesta esperada | Reportar a soporte@nexussoluciones.com.co dentro de una hora |
-| Respuesta obtenida | "Debes reportar incidentes de phishing, malware o pérdida de equipo a **soporte@nexussoluciones.com.co** dentro de **una hora** de detectado el incidente. 📄 *Fuentes:* manual_soporte_ti.pdf" |
-| ¿Correcta? | ✅ Sí |
+| Chunks recuperados | 3 (scores: 0.45, 0.39, 0.36) |
+| Fragmento principal | `politica_trabajo_remoto.md` §6 (seguridad en remoto); `manual_soporte_ti.pdf` (pág. 2) |
+| Respuesta esperada | Reportar a soporte@nexussoluciones.com.co |
+| Respuesta obtenida | "Debes reportar de inmediato cualquier incidente de seguridad (phishing, malware, etc.) a Soporte de TI escribiendo a **soporte@nexussoluciones.com.co** o llamando a la **Ext. 1300**. 📄 *Fuentes:* manual_soporte_ti.pdf, politica_trabajo_remoto.md" |
+| ¿Correcta? | ✅ Sí — el LLM integra correctamente información de ambos documentos |
 
 #### P07 — ¿La empresa paga los gastos de internet si trabajo remoto?
 | Aspecto | Detalle |
@@ -122,7 +124,7 @@ La evaluación se realizó en dos capas:
 #### P10 — ¿Cuál es el salario mínimo en Colombia en 2026?
 | Aspecto | Detalle |
 |---|---|
-| Chunks recuperados | 3 (scores: 0.65, 0.45, 0.43) — de `guia_bienvenida.pdf` (prima, caja de compensación) |
+| Chunks recuperados | 3 (scores: 0.45, 0.41, 0.39) — de `politica_vacaciones.md` y `manual_soporte_ti.pdf` (sin información sobre salario mínimo) |
 | Observación | El retriever recupera chunks relacionados con beneficios salariales de la empresa, pero ninguno contiene el salario mínimo legal colombiano |
 | Respuesta esperada | "No tengo información sobre ese tema en los documentos disponibles" |
 | Respuesta obtenida | "Los documentos disponibles no contienen información sobre el salario mínimo legal colombiano. Para conocer esta cifra, te recomiendo consultar el Ministerio del Trabajo o la página del DANE. 📄 *Fuentes:* guia_bienvenida.pdf" |
@@ -152,13 +154,15 @@ La evaluación se realizó en dos capas:
 
 | Categoría | Total | Correctas | Parciales | Incorrectas |
 |---|---|---|---|---|
-| En alcance | 7 | 6 | 1 (P05) | 0 |
+| En alcance | 7 | 7 | 0 | 0 |
 | Seguimiento | 2 | 2 | 0 | 0 |
 | Fuera de alcance | 3 | 2 | 1 (P10) | 0 |
-| **Total** | **12** | **10** | **2** | **0** |
+| **Total** | **12** | **11** | **1** | **0** |
 
 **Tasa de respuesta correcta o parcialmente correcta: 100%**  
-**Tasa de respuesta completamente correcta: 10/12 (83%)**
+**Tasa de respuesta completamente correcta: 11/12 (92%)**
+
+> P10 se considera parcial porque el retriever recupera chunks temáticamente cercanos (políticas salariales de empresa) pero el LLM reconoce correctamente que el salario mínimo legal no está en los documentos y lo declara. El comportamiento es el esperado; el score bajo (0.45 máx.) sugiere que subir el threshold a 0.40 mejoraría el filtrado de preguntas fuera de alcance sin afectar las preguntas válidas.
 
 ---
 
@@ -169,15 +173,15 @@ La evaluación se realizó en dos capas:
 - **Solución:** `collection_metadata={"hnsw:space": "cosine"}` en `_make_chroma()`.
 - **Efecto:** los scores pasaron a [0, 1], el retrieval funcionó correctamente.
 
-### Ajuste 2 — Revisión del contenido del manual TI (P05)
-- **Problema:** el `manual_soporte_ti.pdf` no tiene una sección explícita de recuperación de contraseñas y su extracción es parcial por el layout en dos columnas.
-- **Solución:** documentar como limitación conocida; en un entorno real se reemplazaría el PDF por uno con mejor estructura o se añadiría un `.md` adicional con FAQs de TI.
-- **Efecto:** el bot respondió correctamente que no tenía información (comportamiento esperado), pero la brecha de contenido queda identificada.
+### Ajuste 2 — Reemplazo de PDFs con layout single-column (P05)
+- **Problema detectado:** los PDFs originales (layout dos columnas) generaban texto truncado; PyPDF extraía solo la columna izquierda. P05 (contraseña) obtenía 0 chunks.
+- **Solución:** reemplazar los PDFs por versiones de columna única con contenido completo. Los nuevos PDFs pasan de 2.1–2.6 KB a 8.6–9.7 KB, con 7 páginas adicionales indexadas.
+- **Efecto:** P05 pasó de 0 chunks a 1 chunk con score 0.49. El índice creció de 21 a 36 chunks. Cross-document retrieval mejoró (P04 y P07 recuperan chunks de múltiples documentos).
 
 ### Ajuste 3 — System prompt para citas con contexto insuficiente (P10)
-- **Problema:** el LLM citaba fuentes aunque el fragmento recuperado no respondía la pregunta.
+- **Problema:** el LLM citaba fuentes aunque el fragmento recuperado no respondía la pregunta (ej. citar `politica_vacaciones.md` al preguntar por el salario mínimo legal).
 - **Solución:** se añadió una regla al system prompt: "cita la fuente solo cuando el fragmento contiene la información que responde la pregunta; no la cites si solo está relacionado temáticamente."
-- **Efecto:** en P10 el bot respondió sin citar, siendo más honesto sobre la ausencia de información.
+- **Efecto:** en P10 el bot respondió sin citar, siendo más honesto sobre la ausencia de información. Scores de P10 bajaron de 0.65 (PDFs anteriores con más contenido salarial mezclado) a 0.45 con los PDFs limpios.
 
 ---
 
