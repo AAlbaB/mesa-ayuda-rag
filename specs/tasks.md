@@ -95,10 +95,10 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-27 | Comando /reindex restringido a admins; reprocesa knowledge_base/ | RF-08 | Pendiente |
-| T-28 | Indexación incremental: hash MD5 en index_state.json; skip de archivos sin cambios; delete+reindex de modificados | RF-09 | Pendiente |
-| T-29 | Log de preguntas sin respuesta en CSV (timestamp, hash user_id, pregunta) | RF-10 | Pendiente |
-| T-30 | Soporte .docx: UnstructuredWordDocumentLoader | RF-01 | Pendiente |
+| T-27 | Comando /reindex restringido a admins; reprocesa knowledge_base/ | RF-08 | Completada |
+| T-28 | Indexación incremental: hash MD5 en index_state.json; skip de archivos sin cambios; delete+reindex de modificados | RF-09 | Completada |
+| T-29 | Log de preguntas sin respuesta en CSV (timestamp, hash user_id, pregunta) | RF-10 | Completada |
+| T-30 | Soporte .docx: python-docx via langchain-community | RF-01 | Completada |
 | T-31 | Dockerfile y docker-compose.yml | NF-02 | Pendiente |
 
 ---
@@ -128,6 +128,6 @@
 | Seguridad | 3 | 3 | 100% |
 | Pruebas | 4 | 4 | 100% |
 | Docs ficticios | 1 | 1 | 100% |
-| Deseables | 5 | 0 | 0% |
+| Deseables | 5 | 4 | 80% |
 | Documentación final | 6 | 0 | 0% |
-| **Total** | **38** | **27** | **71%** |
+| **Total** | **38** | **31** | **82%** |

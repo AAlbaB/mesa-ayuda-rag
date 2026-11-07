@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from langchain_core.documents import Document
 
-from src.ingestion.indexer import VectorIndexer
+if TYPE_CHECKING:
+    from src.ingestion.indexer import VectorIndexer
 
 logger = logging.getLogger(__name__)
 

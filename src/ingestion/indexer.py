@@ -1,4 +1,8 @@
-"""Gestión del índice vectorial con ChromaDB persistente."""
+"""Gestión del índice vectorial con ChromaDB persistente.
+
+Los imports de sentence-transformers y chromadb son lazy (dentro de los métodos)
+para que las pruebas unitarias puedan importar este módulo sin descargar torch/chromadb.
+"""
 
 from __future__ import annotations
 
@@ -6,10 +10,12 @@ import hashlib
 import json
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
+
+if TYPE_CHECKING:
+    from langchain_community.vectorstores import Chroma
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +31,28 @@ class VectorIndexer:
     def __init__(self, vector_store_path: Path, embedding_model: str) -> None:
         self._store_path = vector_store_path
         self._state_path = vector_store_path / _STATE_FILENAME
-        self._embeddings = HuggingFaceEmbeddings(model_name=embedding_model)
+        self._embedding_model = embedding_model  # lazy: se instancia al primer uso
         self._store: Chroma | None = None
+
+    def _get_embeddings(self):  # noqa: ANN201
+        from langchain_community.embeddings import HuggingFaceEmbeddings  # lazy
+        if not hasattr(self, "_embeddings_obj"):
+            self._embeddings_obj = HuggingFaceEmbeddings(model_name=self._embedding_model)
+        return self._embeddings_obj
+
+    def _make_chroma(self, persist_directory: str) -> Chroma:
+        from langchain_community.vectorstores import Chroma as _Chroma  # lazy
+        return _Chroma(
+            collection_name=_COLLECTION_NAME,
+            embedding_function=self._get_embeddings(),
+            persist_directory=persist_directory,
+        )
 
     # ── API pública ───────────────────────────────────────────────────────────
 
     def load_or_create(self) -> None:
         """Carga el índice desde disco si existe; lo crea vacío en caso contrario."""
-        self._store = Chroma(
-            collection_name=_COLLECTION_NAME,
-            embedding_function=self._embeddings,
-            persist_directory=str(self._store_path),
-        )
+        self._store = self._make_chroma(str(self._store_path))
         count = self._store._collection.count()
         logger.info("Índice cargado con %d fragmentos", count)
 
@@ -69,11 +85,7 @@ class VectorIndexer:
         else:
             # Reinicia el índice completo
             self._store.delete_collection()  # type: ignore[union-attr]
-            self._store = Chroma(
-                collection_name=_COLLECTION_NAME,
-                embedding_function=self._embeddings,
-                persist_directory=str(self._store_path),
-            )
+            self._store = self._make_chroma(str(self._store_path))
 
         self._store.add_documents(chunks)  # type: ignore[union-attr]
         logger.info("Indexados %d fragmentos", len(chunks))
