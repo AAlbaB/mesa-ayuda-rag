@@ -21,6 +21,17 @@ from src.security.sanitizer import sanitize_input
 
 logger = logging.getLogger(__name__)
 
+# Caracteres iniciales que los lectores de CSV interpretan como fórmulas
+_CSV_FORMULA_CHARS = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _sanitize_csv_cell(value: str) -> str:
+    """Neutraliza valores que podrían interpretarse como fórmulas en hojas de cálculo."""
+    if value and value[0] in _CSV_FORMULA_CHARS:
+        return "'" + value
+    return value
+
+
 _DENIED_MSG = "⛔ No tienes acceso a este asistente. Contacta con el administrador."
 _RATE_MSG = "⏳ Demasiados mensajes. Espera un momento antes de continuar."
 _ERROR_MSG = "❌ Ocurrió un error al procesar tu mensaje. Inténtalo de nuevo en unos segundos."
@@ -219,19 +230,18 @@ class BotHandlers:
 
     def _log_unanswered(self, uid_hash: str, query: str) -> None:
         """Registra la pregunta en CSV con timestamp y hash del user_id."""
-        import csv
         from datetime import datetime, timezone
 
         try:
             is_new = not self._unanswered_path.exists()
             with self._unanswered_path.open("a", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
+                writer = csv.writer(f, quoting=csv.QUOTE_ALL)
                 if is_new:
                     writer.writerow(["timestamp", "user_id_hash", "query"])
                 writer.writerow([
                     datetime.now(timezone.utc).isoformat(),
                     uid_hash,
-                    query,
+                    _sanitize_csv_cell(query),
                 ])
         except Exception:
             logger.exception("No se pudo registrar pregunta sin respuesta")
