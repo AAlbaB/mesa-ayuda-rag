@@ -76,10 +76,10 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-22 | `tests/test_config.py`: variables requeridas, fallo por ausencia, parseo de listas | NF-04 | Pendiente |
-| T-23 | `tests/test_chunker.py`: tamaño máximo, solapamiento, preservación de metadatos | NF-04 | Pendiente |
-| T-24 | `tests/test_retriever.py`: filtrado por umbral, top-k, 0 resultados bajo umbral | NF-04 | Pendiente |
-| T-25 | `tests/test_access.py`: usuario permitido, denegado, admin, rate limit excedido | NF-04 | Pendiente |
+| T-22 | `tests/test_config.py`: 13 casos — defaults, vars requeridas, parseo CSV, validadores | NF-04 | Completada |
+| T-23 | `tests/test_chunker.py`: 8 casos — tamaño, solapamiento, metadatos, edge cases | NF-04 | Completada |
+| T-24 | `tests/test_retriever.py`: 8 casos — threshold, top-k, mixed scores, formato fuente | NF-04 | Completada |
+| T-25 | `tests/test_access.py`: 8 casos — acceso, admin, rate limit, ventana temporal | NF-04 | Completada |
 
 ---
 
@@ -87,7 +87,7 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-26 | Crear 4 documentos ficticios en knowledge_base/ (política vacaciones .md, gastos .txt, TI .pdf, trabajo remoto .md, bienvenida .pdf) | Sección 8 | Pendiente |
+| T-26 | 5 documentos: vacaciones.md, gastos.txt, trabajo_remoto.md, soporte_ti.pdf (2 págs.), bienvenida.pdf | Sección 8 | Completada |
 
 ---
 
@@ -126,8 +126,8 @@
 | Retrieval/respuesta | 4 | 4 | 100% |
 | Bot Telegram | 4 | 4 | 100% |
 | Seguridad | 3 | 3 | 100% |
-| Pruebas | 4 | 0 | 0% |
-| Docs ficticios | 1 | 0 | 0% |
+| Pruebas | 4 | 4 | 100% |
+| Docs ficticios | 1 | 1 | 100% |
 | Deseables | 5 | 0 | 0% |
 | Documentación final | 6 | 0 | 0% |
-| **Total** | **38** | **22** | **58%** |
+| **Total** | **38** | **27** | **71%** |

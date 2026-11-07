@@ -6,6 +6,8 @@ import logging
 import time
 from collections import deque
 
+from src.logging_setup import hash_user_id
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,7 +55,7 @@ class RateLimiter:
             window.popleft()
 
         if len(window) >= self._limit:
-            logger.debug("Rate limit excedido para user %s", user_id)
+            logger.debug("Rate limit excedido", extra={"user_id_hash": hash_user_id(user_id)})
             return False
 
         window.append(now)
