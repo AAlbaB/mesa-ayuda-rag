@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -51,5 +53,13 @@ def setup_logging(level: str = "INFO") -> None:
 
 
 def hash_user_id(user_id: int) -> str:
-    """Retorna un hash SHA-256 truncado del user_id para logs sin exponer el ID real."""
-    return hashlib.sha256(str(user_id).encode()).hexdigest()[:12]
+    """Retorna un HMAC-SHA256 truncado del user_id para logs sin exponer el ID real.
+
+    Usa LOG_HASH_KEY del entorno como clave para evitar ataques de fuerza bruta
+    por enumeración (los IDs de Telegram son numéricos y tienen rango acotado).
+    Si la clave no está configurada, usa una cadena fija de advertencia — suficiente
+    para pruebas, inseguro en producción.
+    """
+    key = os.environ.get("LOG_HASH_KEY", "INSECURE-dev-key-change-in-prod").encode()
+    mac = hmac.new(key, str(user_id).encode(), hashlib.sha256)
+    return mac.hexdigest()[:16]

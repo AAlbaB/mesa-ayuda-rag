@@ -63,6 +63,8 @@ class Settings(BaseSettings):
 
     # ── Logging ───────────────────────────────────────────────────────────────
     log_level: str = Field("INFO")
+    # Clave para HMAC que anonimiza user_ids en logs (evita fuerza bruta por enumeración)
+    log_hash_key: str = Field("INSECURE-dev-key-change-in-prod")
 
     # ── Validadores ───────────────────────────────────────────────────────────
 
