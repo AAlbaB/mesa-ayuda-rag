@@ -21,11 +21,11 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-02 | Estructura de carpetas del proyecto (`src/`, `tests/`, `prompts/`, `knowledge_base/`, `docs/`) | plan.md §8 | Pendiente |
-| T-03 | `pyproject.toml`: dependencias, configuración de ruff, pytest | NF-04 | Pendiente |
-| T-04 | `src/config.py`: Pydantic Settings con todas las variables de NF-01; falla rápido si falta variable requerida | NF-01 | Pendiente |
-| T-05 | `.env.example` comentado con todas las variables | NF-01, NF-02 | Pendiente |
-| T-06 | Logging estructurado (JSON) configurado en `src/__init__.py` o módulo `logging_setup.py` | NF-04 | Pendiente |
+| T-02 | Estructura de carpetas del proyecto (`src/`, `tests/`, `prompts/`, `knowledge_base/`, `docs/`) | plan.md §8 | Completada |
+| T-03 | `pyproject.toml`: dependencias, configuración de ruff, pytest | NF-04 | Completada |
+| T-04 | `src/config.py`: Pydantic Settings con todas las variables de NF-01; falla rápido si falta variable requerida | NF-01 | Completada |
+| T-05 | `.env.example` comentado con todas las variables | NF-01, NF-02 | Completada |
+| T-06 | Logging estructurado (JSON) configurado en `src/logging_setup.py`; HMAC para anonimizar user_id | NF-04 | Completada |
 
 ---
 
@@ -33,10 +33,10 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-07 | `src/ingestion/loader.py`: carga .md, .txt, .pdf con metadatos (source, page) | RF-01 | Pendiente |
-| T-08 | `src/ingestion/chunker.py`: RecursiveCharacterTextSplitter con CHUNK_SIZE/OVERLAP | RF-02 | Pendiente |
-| T-09 | `src/ingestion/indexer.py`: ChromaDB persistente; métodos build_index, load_index, get_indexed_sources | RF-02 | Pendiente |
-| T-10 | Integración pipeline de ingesta: loader → chunker → indexer; ejecución al arrancar el bot | RF-01, RF-02 | Pendiente |
+| T-07 | `src/ingestion/loader.py`: carga .md, .txt, .pdf con metadatos (source, page) | RF-01 | Completada |
+| T-08 | `src/ingestion/chunker.py`: RecursiveCharacterTextSplitter con CHUNK_SIZE/OVERLAP | RF-02 | Completada |
+| T-09 | `src/ingestion/indexer.py`: ChromaDB persistente; métodos build_index, load_index, get_indexed_sources | RF-02 | Completada |
+| T-10 | `src/ingestion/pipeline.py`: integración loader → chunker → indexer; modo incremental (RF-09) | RF-01, RF-02 | Completada |
 
 ---
 
@@ -121,8 +121,8 @@
 | Fase | Tareas | Completadas | % |
 |---|---|---|---|
 | Especificación | 2 | 2 | 100% |
-| Estructura base | 5 | 0 | 0% |
-| Ingesta/indexación | 4 | 0 | 0% |
+| Estructura base | 5 | 5 | 100% |
+| Ingesta/indexación | 4 | 4 | 100% |
 | Retrieval/respuesta | 4 | 0 | 0% |
 | Bot Telegram | 4 | 0 | 0% |
 | Seguridad | 3 | 0 | 0% |
@@ -130,4 +130,4 @@
 | Docs ficticios | 1 | 0 | 0% |
 | Deseables | 5 | 0 | 0% |
 | Documentación final | 6 | 0 | 0% |
-| **Total** | **38** | **2** | **5%** |
+| **Total** | **38** | **11** | **29%** |
