@@ -44,10 +44,10 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-11 | `src/retrieval/retriever.py`: búsqueda de similitud con filtro por SIMILARITY_THRESHOLD | RF-03, RF-04 | Pendiente |
-| T-12 | `prompts/system_prompt.md`: prompt de sistema con reglas de fundamentación, citas y anti-inyección | NF-01, NF-03 | Pendiente |
-| T-13 | `src/llm/chain.py`: cadena LangChain; selección de proveedor LLM por config; formateo de respuesta con fuentes | RF-03 | Pendiente |
-| T-14 | Manejo de lo desconocido: mensaje preconfigurado cuando 0 chunks superan el umbral | RF-04 | Pendiente |
+| T-11 | `src/retrieval/retriever.py`: búsqueda de similitud con filtro por SIMILARITY_THRESHOLD | RF-03, RF-04 | Completada |
+| T-12 | `prompts/system_prompt.md`: prompt de sistema con reglas de fundamentación, citas y anti-inyección | NF-01, NF-03 | Completada |
+| T-13 | `src/llm/chain.py`: cadena LangChain; selección de proveedor LLM por config; formateo de respuesta con fuentes | RF-03 | Completada |
+| T-14 | Manejo de lo desconocido: mensaje preconfigurado cuando 0 chunks superan el umbral | RF-04 | Completada |
 
 ---
 
@@ -123,11 +123,11 @@
 | Especificación | 2 | 2 | 100% |
 | Estructura base | 5 | 5 | 100% |
 | Ingesta/indexación | 4 | 4 | 100% |
-| Retrieval/respuesta | 4 | 0 | 0% |
+| Retrieval/respuesta | 4 | 4 | 100% |
 | Bot Telegram | 4 | 0 | 0% |
 | Seguridad | 3 | 0 | 0% |
 | Pruebas | 4 | 0 | 0% |
 | Docs ficticios | 1 | 0 | 0% |
 | Deseables | 5 | 0 | 0% |
 | Documentación final | 6 | 0 | 0% |
-| **Total** | **38** | **11** | **29%** |
+| **Total** | **38** | **15** | **39%** |
