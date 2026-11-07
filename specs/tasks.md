@@ -95,10 +95,10 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-27 | Comando /reindex restringido a admins; reprocesa knowledge_base/ | RF-08 | Pendiente |
-| T-28 | Indexación incremental: hash MD5 en index_state.json; skip de archivos sin cambios; delete+reindex de modificados | RF-09 | Pendiente |
-| T-29 | Log de preguntas sin respuesta en CSV (timestamp, hash user_id, pregunta) | RF-10 | Pendiente |
-| T-30 | Soporte .docx: UnstructuredWordDocumentLoader | RF-01 | Pendiente |
+| T-27 | Comando /reindex restringido a admins; reprocesa knowledge_base/ | RF-08 | Completada |
+| T-28 | Indexación incremental: hash MD5 en index_state.json; skip de archivos sin cambios; delete+reindex de modificados | RF-09 | Completada |
+| T-29 | Log de preguntas sin respuesta en CSV (timestamp, hash user_id, pregunta) | RF-10 | Completada |
+| T-30 | Soporte .docx: python-docx via langchain-community | RF-01 | Completada |
 | T-31 | Dockerfile y docker-compose.yml | NF-02 | Pendiente |
 
 ---
@@ -107,12 +107,12 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-32 | README.md: descripción, prereqs, instalación, configuración, ejecución, uso, limitaciones | Sección 6.1 | Pendiente |
-| T-33 | docs/ARQUITECTURA.md: diagrama Mermaid, flujos detallados, estructura de carpetas | Sección 6.2 | Pendiente |
-| T-34 | docs/DECISIONES.md: 8 decisiones con contexto, opciones, decisión, justificación, trade-offs | Sección 6.3 | Pendiente |
-| T-35 | docs/USO_IA.md: herramientas, prompts representativos, sugerencias rechazadas, verificación manual | Sección 6.4 | Pendiente |
-| T-36 | docs/EVALUACION.md: ≥10 preguntas (≥3 fuera de alcance, ≥2 de seguimiento), resultados, ajustes | Sección 6.5 | Pendiente |
-| T-37 | docs/CRITERIO_TECNICO.md: 7 preguntas respondidas | Sección 6.6 | Pendiente |
+| T-32 | README.md: descripción, prereqs, instalación, configuración, ejecución, uso, limitaciones | Sección 6.1 | Completada |
+| T-33 | docs/ARQUITECTURA.md: diagrama Mermaid, flujos detallados, estructura de carpetas | Sección 6.2 | Completada |
+| T-34 | docs/DECISIONES.md: 8 decisiones con contexto, opciones, decisión, justificación, trade-offs | Sección 6.3 | Completada |
+| T-35 | docs/USO_IA.md: herramientas, prompts representativos, sugerencias rechazadas, verificación manual | Sección 6.4 | Completada |
+| T-36 | docs/EVALUACION.md: ≥10 preguntas (≥3 fuera de alcance, ≥2 de seguimiento), resultados, ajustes | Sección 6.5 | Completada |
+| T-37 | docs/CRITERIO_TECNICO.md: 7 preguntas respondidas | Sección 6.6 | Completada |
 
 ---
 
@@ -128,6 +128,6 @@
 | Seguridad | 3 | 3 | 100% |
 | Pruebas | 4 | 4 | 100% |
 | Docs ficticios | 1 | 1 | 100% |
-| Deseables | 5 | 0 | 0% |
-| Documentación final | 6 | 0 | 0% |
-| **Total** | **38** | **27** | **71%** |
+| Deseables | 5 | 4 | 80% |
+| Documentación final | 6 | 6 | 100% |
+| **Total** | **38** | **37** | **97%** |
