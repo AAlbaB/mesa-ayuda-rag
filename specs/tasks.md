@@ -55,10 +55,10 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-15 | `src/bot/handlers.py`: handler de mensaje de texto; integración con retrieval + LLM | RF-03, RF-04 | Pendiente |
-| T-16 | Comandos /start, /help, /reset, /fuentes | RF-06 | Pendiente |
-| T-17 | `src/bot/history.py`: ConversationHistory en memoria con deque y HISTORY_LENGTH | RF-05 | Pendiente |
-| T-18 | Integración del historial en el flujo de consulta | RF-05 | Pendiente |
+| T-15 | `src/bot/handlers.py`: handler de mensaje de texto; integración con retrieval + LLM | RF-03, RF-04 | Completada |
+| T-16 | Comandos /start, /help, /reset, /fuentes, /reindex (admin) | RF-06, RF-08 | Completada |
+| T-17 | `src/bot/history.py`: ConversationHistory en memoria con deque y HISTORY_LENGTH | RF-05 | Completada |
+| T-18 | Integración del historial en el flujo de consulta + `src/main.py` como punto de entrada | RF-05 | Completada |
 
 ---
 
@@ -66,9 +66,9 @@
 
 | ID | Descripción | Requisito(s) | Estado |
 |---|---|---|---|
-| T-19 | `src/security/access.py`: AccessControl (ALLOWED_USER_IDS + ADMIN_USER_IDS); RateLimiter (sliding window en memoria) | RF-07, NF-01 | Pendiente |
-| T-20 | Integración de access control y rate limit como middleware en todos los handlers | RF-07 | Pendiente |
-| T-21 | `src/security/sanitizer.py`: truncado de inputs largos; detección de patrones de inyección | NF-03 | Pendiente |
+| T-19 | `src/security/access.py`: AccessControl (ALLOWED_USER_IDS + ADMIN_USER_IDS); RateLimiter (sliding window en memoria) | RF-07, NF-01 | Completada |
+| T-20 | Integración de access control y rate limit como middleware en todos los handlers | RF-07 | Completada |
+| T-21 | `src/security/sanitizer.py`: truncado a 2000 chars; detección de 7 patrones de inyección con log de auditoría | NF-03 | Completada |
 
 ---
 
@@ -124,10 +124,10 @@
 | Estructura base | 5 | 5 | 100% |
 | Ingesta/indexación | 4 | 4 | 100% |
 | Retrieval/respuesta | 4 | 4 | 100% |
-| Bot Telegram | 4 | 0 | 0% |
-| Seguridad | 3 | 0 | 0% |
+| Bot Telegram | 4 | 4 | 100% |
+| Seguridad | 3 | 3 | 100% |
 | Pruebas | 4 | 0 | 0% |
 | Docs ficticios | 1 | 0 | 0% |
 | Deseables | 5 | 0 | 0% |
 | Documentación final | 6 | 0 | 0% |
-| **Total** | **38** | **15** | **39%** |
+| **Total** | **38** | **22** | **58%** |
