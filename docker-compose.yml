@@ -12,6 +12,9 @@ services:
       - chroma_data:/app/chroma_db
       # Caché del modelo de embeddings: evita re-descargar PyTorch (~1.5 GB) en cada inicio.
       - hf_cache:/home/botuser/.cache/huggingface
+      # Preguntas sin respuesta: visible en el host en tiempo real (el archivo debe
+      # existir antes de levantar el contenedor; Docker lo crearía como directorio si no).
+      - ./unanswered_questions.csv:/app/unanswered_questions.csv
     restart: unless-stopped
 
 volumes:
