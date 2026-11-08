@@ -120,13 +120,13 @@ Los LLMs tienden a generar información plausible pero falsa cuando no tienen su
 - Fine-tuning del modelo con ejemplos de "no sé": sobrepasa el alcance
 
 **Decisión**  
-Doble barrera: `SIMILARITY_THRESHOLD` (primera línea) + `system_prompt.md` restrictivo (segunda línea).
+Triple barrera: `SIMILARITY_THRESHOLD` (primera línea) + `system_prompt.md` restrictivo (segunda línea) + detección de respuestas sin información en código (tercera línea).
 
 **Justificación**  
-Primera barrera: si ningún chunk supera `SIMILARITY_THRESHOLD` (0.30), la respuesta es un mensaje predefinido que nunca llega al LLM, eliminando completamente el riesgo de alucinación. Segunda barrera: el system prompt en `prompts/system_prompt.md` instruye explícitamente al modelo a responder "No tengo información sobre ese tema" si la respuesta no está en los fragmentos provistos. El prompt no está hardcodeado; `SYSTEM_PROMPT_PATH` permite actualizarlo sin modificar código. Se incluyó además detección de 7 patrones de prompt injection en el input del usuario (con log de auditoría, sin bloquear el mensaje).
+Primera barrera: si ningún chunk supera `SIMILARITY_THRESHOLD` (0.30), la respuesta es un mensaje predefinido que nunca llega al LLM, eliminando completamente el riesgo de alucinación. Segunda barrera: el system prompt instruye explícitamente al modelo a responder "No tengo información sobre ese tema" si los fragmentos no responden la pregunta. Tercera barrera (añadida tras prueba real): `_answer_has_no_info()` en `chain.py` detecta señales lingüísticas en la respuesta del LLM y retorna `sources=[]` cuando el modelo declara no tener información, evitando que se muestren fuentes de chunks recuperados pero irrelevantes. Este caso ocurre cuando el retriever pasa el threshold con documentos temáticamente cercanos pero el LLM detecta que no responden la pregunta. El prompt no está hardcodeado; `SYSTEM_PROMPT_PATH` permite actualizarlo sin modificar código. Se incluyó además detección de 7 patrones de prompt injection en el input del usuario (con log de auditoría, sin bloquear el mensaje).
 
 **Trade-offs aceptados**  
-Un umbral muy alto (ej. 0.70) puede filtrar preguntas legítimamente relacionadas cuyo vocabulario difiere del documento. Se eligió 0.30 como valor conservador para no perder preguntas válidas. El prompt restrictivo introduce algo de rigidez: el bot puede responder "no tengo información" a preguntas que podría deducir con conocimiento general; esto es intencional y está documentado como limitación conocida.
+Un umbral muy alto (ej. 0.70) puede filtrar preguntas legítimamente relacionadas cuyo vocabulario difiere del documento. Se eligió 0.30 como valor conservador. La función `_answer_has_no_info()` usa coincidencia de subcadenas en español; si el modelo responde en otro idioma o con una frase no cubierta, las fuentes se mostrarían igual — es una heurística, no una garantía. Para mayor robustez se podría usar un clasificador secundario o una respuesta estructurada del LLM, pero sobrepasa el alcance de esta prueba.
 
 ---
 

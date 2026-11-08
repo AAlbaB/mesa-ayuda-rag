@@ -114,6 +114,7 @@
 | T-36 | docs/EVALUACION.md: ≥10 preguntas (≥3 fuera de alcance, ≥2 de seguimiento), resultados, ajustes | Sección 6.5 | Completada |
 | T-37 | docs/CRITERIO_TECNICO.md: 7 preguntas respondidas | Sección 6.6 | Completada |
 | T-38 | docs/TRAZABILIDAD.md: matriz RF→tarea→commit→prueba→estado; sección de verificación con gaps | Sección 6 | Completada |
+| T-39 | fix(rag): `_answer_has_no_info()` en chain.py + condición `not sources` en handlers.py — tercer escudo anti-alucinación para no mostrar fuentes cuando el LLM declara no tener información | RF-04, RF-10 | Completada |
 
 ---
 
@@ -131,4 +132,5 @@
 | Docs ficticios | 1 | 1 | 100% |
 | Deseables | 5 | 5 | 100% |
 | Documentación final | 7 | 7 | 100% |
-| **Total** | **39** | **39** | **100%** |
+| Correcciones post-prueba | 1 | 1 | 100% |
+| **Total** | **40** | **40** | **100%** |
