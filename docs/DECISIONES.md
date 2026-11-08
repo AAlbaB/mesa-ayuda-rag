@@ -169,3 +169,36 @@ Con 20 parámetros, separar en dos archivos agrega complejidad (dos archivos a g
 
 **Trade-offs aceptados**  
 El `.env` crece conforme se agregan parámetros, mezclando secretos con configuración operacional. Para un proyecto en producción, separar secretos (`.env` con permisos restrictivos) de configuración (`config.yaml` versionable sin secretos) mejoraría la seguridad operativa. Se documenta como mejora para producción en `CRITERIO_TECNICO.md §3`.
+
+---
+
+## D-09 Estrategia de contenedorización (Docker)
+
+**Contexto**  
+El evaluador necesita ejecutar el bot en su propia máquina. La instalación directa con Python exige gestionar versiones, descargar PyTorch (~1.5 GB) en el entorno del host y configurar el entorno virtual manualmente. Además, `sentence-transformers` descarga su modelo al `~/.cache/huggingface/` del sistema, lo que puede sorprender al evaluador. Docker elimina estas fricciones y garantiza reproducibilidad.
+
+**Opciones consideradas**
+- Sin Docker: `python -m src.main` directamente en el host (ya implementado como opción A).
+- **Dockerfile + docker-compose**: imagen autocontenida; volúmenes para persistencia del índice y caché de embeddings.
+- Imagen base `python:3.11` (completa, ~1 GB) vs. `python:3.11-slim` (~130 MB).
+- Usuario `root` dentro del contenedor vs. usuario sin privilegios.
+
+**Decisión**  
+`python:3.11-slim` como imagen base + `docker-compose.yml` con cuatro volúmenes + usuario `botuser` sin root.
+
+**Justificación**  
+`slim` recorta ~870 MB respecto a la imagen completa sin afectar la compatibilidad con las dependencias del proyecto (solo se requiere instalar `libgomp1` para el runtime OpenMP de PyTorch). Los volúmenes cumplen roles distintos:
+
+| Volumen | Tipo | Propósito |
+|---|---|---|
+| `knowledge_base/` | bind mount `:ro` | El evaluador agrega documentos desde el host sin reconstruir la imagen |
+| `prompts/` | bind mount `:ro` | El system prompt se puede ajustar sin reconstruir |
+| `chroma_data` | nombrado | El índice vectorial persiste entre `docker compose down / up` |
+| `hf_cache` | nombrado | El modelo de embeddings (~420 MB) se descarga una sola vez |
+
+Ejecutar como `botuser` (sin root) aplica el principio de mínimo privilegio: si hubiera una vulnerabilidad de ejecución de código, el proceso no tendría permisos de root en el host (con namespacing de usuario habilitado en Docker).
+
+El `.env` del host se pasa al contenedor vía `env_file`, por lo que el comportamiento de `Pydantic Settings` es idéntico al de la ejecución directa: las variables de entorno tienen precedencia sobre el archivo `.env` dentro del contenedor.
+
+**Trade-offs aceptados**  
+La primera construcción descarga PyTorch dentro del contenedor (~1.5 GB), lo que puede tardar 10–20 minutos. Las reconstrucciones subsiguientes sin cambios en `pyproject.toml` usan el layer cacheado de `pip install` y son inmediatas. El volumen `hf_cache` evita re-descargar el modelo de embeddings en cada `docker compose down / up`. El usuario sin root puede generar conflictos de permisos en bind mounts en Linux si el UID del host no coincide con el del contenedor; en Docker Desktop para Windows/Mac esto no ocurre porque el motor maneja la traducción de permisos automáticamente.

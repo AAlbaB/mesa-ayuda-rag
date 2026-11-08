@@ -229,6 +229,9 @@ mesa-ayuda-rag/
 ├── .env                     # Secretos y configuración local (en .gitignore — nunca subir)
 ├── .env.example             # Plantilla documentada con todas las variables
 ├── .gitignore
+├── .dockerignore            # Excluye .env, .venv, chroma_db y otros de la imagen
+├── Dockerfile               # Imagen python:3.11-slim; usuario sin root; layer cache de deps
+├── docker-compose.yml       # Servicio bot: env_file, volúmenes nombrados, restart policy
 ├── pyproject.toml           # Dependencias, ruff, pytest
 └── README.md
 ```

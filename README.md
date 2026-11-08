@@ -103,9 +103,23 @@ Consulta [`.env.example`](.env.example) para ver todas las variables con descrip
 
 ## Ejecución
 
+### Opción A — Python directo
+
 ```bash
 python -m src.main
 ```
+
+### Opción B — Docker (recomendado, no requiere Python instalado)
+
+```bash
+# Primera vez: construye la imagen e inicia el contenedor
+docker compose up --build
+
+# Siguientes arranques (imagen ya construida)
+docker compose up
+```
+
+> **Primera construcción:** `sentence-transformers` descarga PyTorch (~1.5 GB) dentro del contenedor. Puede tardar 10–20 minutos según la conexión. Las ejecuciones siguientes usan el volumen `hf_cache` y son inmediatas.
 
 El bot indexa automáticamente los documentos de `knowledge_base/` y queda a la espera de mensajes.
 La terminal mostrará logs en formato JSON con el estado de cada operación.

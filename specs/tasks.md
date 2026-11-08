@@ -99,7 +99,7 @@
 | T-28 | Indexación incremental: hash MD5 en index_state.json; skip de archivos sin cambios; delete+reindex de modificados | RF-09 | Completada |
 | T-29 | Log de preguntas sin respuesta en CSV (timestamp, hash user_id, pregunta) | RF-10 | Completada |
 | T-30 | Soporte .docx: python-docx via langchain-community | RF-01 | Completada |
-| T-31 | Dockerfile y docker-compose.yml | NF-02 | Pendiente |
+| T-31 | Dockerfile y docker-compose.yml | NF-02 | Completada |
 
 ---
 
@@ -129,6 +129,6 @@
 | Seguridad | 3 | 3 | 100% |
 | Pruebas | 4 | 4 | 100% |
 | Docs ficticios | 1 | 1 | 100% |
-| Deseables | 5 | 4 | 80% |
+| Deseables | 5 | 5 | 100% |
 | Documentación final | 7 | 7 | 100% |
-| **Total** | **39** | **38** | **97%** |
+| **Total** | **39** | **39** | **100%** |
