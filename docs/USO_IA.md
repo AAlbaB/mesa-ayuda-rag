@@ -20,7 +20,7 @@ No se utilizaron otras herramientas de IA de forma sistemática. Claude Code fue
 | **Diseño** | Propuesta de la arquitectura en capas (ingesta, retrieval, LLM, bot, seguridad), selección de librerías y justificación de decisiones. El desarrollador tomó las decisiones finales y pidió ajustes en la selección de modelos de embeddings y LLM. |
 | **Implementación** | Generación de todos los módulos de código Python. Claude Code escribió el código; el desarrollador revisó la lógica, corrigió comportamientos y detectó vulnerabilidades de seguridad. |
 | **Pruebas** | Generación de los 40 casos de prueba distribuidos en 4 archivos. El desarrollador verificó la cobertura y solicitó casos adicionales para edge cases. |
-| **Documentos ficticios** | Generación del contenido de los 5 documentos de `knowledge_base/` con `fpdf2`. Se generaron con Python dentro del entorno virtual del proyecto. |
+| **Documentos ficticios** | Generación del **contenido** de los 5 documentos de `knowledge_base/` (políticas de vacaciones, reembolso de gastos, trabajo remoto, soporte de TI y guía de bienvenida). Todos son **ficticios**: corresponden a una empresa imaginaria llamada *Nexus Soluciones S.A.S.* y no representan ninguna organización real. El texto de cada documento fue redactado por **Claude (claude-sonnet-4-6)**; los archivos `.pdf` se materializaron con `fpdf2` ejecutado dentro del entorno virtual del proyecto. |
 | **Documentación** | Redacción de todos los archivos `docs/` y `README.md`. El desarrollador proveyó las respuestas técnicas (criterio propio) y Claude Code estructuró y redactó el texto. |
 
 ---
