@@ -150,6 +150,27 @@ La evaluación se realizó en dos capas:
 
 ---
 
+## Prueba de reindexación dinámica (RF-08 y RF-09)
+
+Esta prueba verifica que el comando `/reindex` actualiza el índice en caliente (sin reiniciar el bot) y que la indexación incremental no reprocesa archivos sin cambios.
+
+**Documento de prueba:** `knowledge_base/calendario_corporativo_2026.md`  
+Contenido: calendario de eventos corporativos 2026, incluyendo "Día de la Familia: viernes 12 de junio de 2026". El documento es coherente con los demás: la nómina quincenal (días 15 y 30) coincide con la política de reembolso, y el contacto de RR. HH. es el mismo que aparece en otros documentos.
+
+| Paso | Acción | Resultado esperado | ¿Correcto? |
+|---|---|---|---|
+| 1 | Pregunta: *¿Cuándo es el Día de la Familia?* (antes de copiar el archivo) | "No tengo información sobre ese tema" | ✅ Sí |
+| 2 | Copiar `calendario_corporativo_2026.md` a `knowledge_base/` sin reiniciar | El bot aún no sabe (no ha reindexado) | ✅ Sí |
+| 3 | `/reindex` como administrador | Confirma número de documentos y chunks procesados | ✅ Sí |
+| 4 | Repetir pregunta: *¿Cuándo es el Día de la Familia?* | "viernes 12 de junio de 2026"; cita `calendario_corporativo_2026.md` | ✅ Sí |
+| 5 | `/reindex` con usuario no administrador | "No tienes permisos para ejecutar este comando" | ✅ Sí |
+| 6 | Segundo `/reindex` sin cambios en los archivos (RF-09) | "No hay archivos nuevos o modificados" — no reprocesa nada | ✅ Sí |
+| 7 | Borrar el archivo + `/reindex` | Pregunta de nuevo → "No tengo información sobre ese tema" | ✅ Sí |
+
+**Conclusión:** RF-08 (reindex restringido a admins) y RF-09 (indexación incremental por hash MD5) funcionan correctamente. El bot actualiza su base de conocimiento en caliente sin necesidad de reinicio.
+
+---
+
 ## Resumen de resultados
 
 | Categoría | Total | Correctas | Parciales | Incorrectas |
