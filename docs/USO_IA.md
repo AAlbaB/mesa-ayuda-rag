@@ -70,6 +70,12 @@ Para tareas grandes (ej. `handlers.py` con todo el pipeline RAG), el desarrollad
 
 **Por qué así:** Se listaron explícitamente las categorías de vulnerabilidad a buscar. Una pregunta genérica "¿tiene problemas de seguridad?" habría producido una revisión superficial.
 
+### Prompt 6 — Diagnóstico de bug durante la prueba real
+
+> *"El bot arranca bien pero rechaza al usuario aunque el ID correcto está en el .env. Ejecuta: `.venv/Scripts/python -c "from src.config import get_settings; s = get_settings(); print('allowed:', s.allowed_user_ids)"`"*
+
+**Por qué así:** En lugar de revisar el código a ciegas, el prompt aisló el problema en una sola variable: si `get_settings()` devuelve `[]` con el `.env` presente, el bug está en el parseo de la config, no en el bot. Esa salida (`allowed: []`) fue suficiente para identificar que Pydantic Settings v2 pre-parsea el valor como JSON (`json.loads("9193063212") == 9193063212`, un `int`, no un `str`) antes de invocar el validador de campo. El prompt de diagnóstico previno varios ciclos de prueba y error en el código del bot.
+
 ---
 
 ## 5. Sugerencias que rechacé o corregí
@@ -91,14 +97,14 @@ Durante la generación de PDFs ficticios, Claude Code intentó ejecutar `pip ins
 **Rechazo 5 — Commits directamente en master**  
 Claude Code hizo el primer commit de código directamente en la rama `master`. Se rechazó y se estableció el flujo Gitflow: `master` solo recibe merges `--no-ff` desde `develop`, todo el desarrollo ocurre en `feature/*`.
 
-**Rechazo 7 — parse_mode="Markdown" para mensajes con nombres de archivo**
-La propuesta inicial formateaba todos los mensajes del bot con `parse_mode="Markdown"`. En la prueba real del bot, los nombres de archivo con guiones bajos (`manual_soporte_ti.pdf`) provocaron errores de Telegram ("Can't parse entities") porque los guiones bajos se interpretan como marcadores de itálica. Se rechazó y se migró a `parse_mode="HTML"` para las fuentes (donde se controla el formato) y sin parse_mode para los mensajes estáticos.
-
-**Rechazo 8 — Validador de IDs sin manejo del tipo int**
-El validador `_parse_int_list` original solo manejaba `str` y `list`. Durante la prueba real se descubrió que Pydantic Settings v2 pre-parsea los valores de `.env` como JSON antes de invocar los validadores: un ID único como `9193063212` llega como `int`, no como `str`. El validador retornaba `[]` y nadie tenía acceso. Se rechazó la implementación original y se añadió el caso `isinstance(v, int): return [v]`.
-
 **Rechazo 6 — Bloquear mensajes detectados como inyección**  
 La propuesta inicial del sanitizador bloqueaba mensajes que coincidieran con los patrones de inyección. Se rechazó porque genera falsos positivos: palabras como "ignora", "olvida" o "pretende" aparecen en preguntas legítimas ("¿puedo ignorar las instrucciones del jefe?"). La defensa real es el system prompt; el sanitizador solo registra el intento.
+
+**Rechazo 7 — parse_mode="Markdown" para mensajes con nombres de archivo**  
+La propuesta inicial formateaba todos los mensajes del bot con `parse_mode="Markdown"`. En la prueba real, los nombres de archivo con guiones bajos (`manual_soporte_ti.pdf`) provocaron errores de Telegram ("Can't parse entities") porque los guiones bajos se interpretan como marcadores de itálica. Se rechazó y se migró a `parse_mode="HTML"` con un helper `_md_to_html()` que convierte `**negrita**` a `<b>negrita</b>` y escapa caracteres HTML antes de enviar.
+
+**Rechazo 8 — Validador de IDs sin manejo del tipo int**  
+El validador `_parse_int_list` original solo manejaba `str` y `list`. Durante la prueba real se descubrió que Pydantic Settings v2 pre-parsea los valores del `.env` como JSON antes de invocar los validadores: un ID único como `9193063212` llega como `int`, no como `str`. El validador retornaba `[]` y nadie tenía acceso. Se rechazó la implementación original y se añadió el caso `isinstance(v, int): return [v]`.
 
 ---
 
@@ -113,6 +119,7 @@ La propuesta inicial del sanitizador bloqueaba mensajes que coincidieran con los
 | **Patrón Gitflow** | `git log --oneline --graph` para verificar la historia de ramas |
 | **Credenciales fuera del repositorio** | `git log --all --full-history -- .env` para confirmar que el archivo nunca fue commitado |
 | **Linting** | `ruff check src/ tests/` para verificar que el código no tiene errores de estilo |
+| **Prueba real del bot en Telegram** | Se probaron los 5 comandos y preguntas de la evaluación con el bot corriendo en modo polling; se diagnosticaron y corrigieron 3 bugs (acceso bloqueado, Markdown con guiones bajos, duplicación de fuentes) antes del merge a master |
 
 ---
 
