@@ -16,14 +16,15 @@ RUN pip install --no-cache-dir -e .
 COPY src/ src/
 COPY prompts/ prompts/
 
-# Usuario sin privilegios de root (buena práctica de seguridad en contenedores)
+# Usuario sin privilegios de root. El caché de HuggingFace se coloca dentro
+# de /app para que el chown cubra también el punto de montaje del volumen hf_cache.
 RUN useradd --create-home --shell /bin/bash botuser \
-    && mkdir -p /app/knowledge_base /app/chroma_db \
+    && mkdir -p /app/knowledge_base /app/chroma_db /app/.cache/huggingface \
     && chown -R botuser:botuser /app
 
 USER botuser
 
-# HuggingFace descarga el modelo de embeddings al HOME del usuario activo
-ENV HF_HOME=/home/botuser/.cache/huggingface
+# Apunta a /app/.cache para que botuser tenga permisos sobre el volumen montado.
+ENV HF_HOME=/app/.cache/huggingface
 
 CMD ["python", "-m", "src.main"]
