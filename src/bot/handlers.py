@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import csv
+import html
 import logging
+import re
 from pathlib import Path
 
 from telegram import Update
@@ -20,6 +22,22 @@ from src.security.access import AccessControl, RateLimiter
 from src.security.sanitizer import sanitize_input
 
 logger = logging.getLogger(__name__)
+
+_BOLD_RE = re.compile(r"\*\*(.+?)\*\*", re.DOTALL)
+_ITALIC_RE = re.compile(r"\*([^*\n]+?)\*")
+
+
+def _md_to_html(text: str) -> str:
+    """Convierte markdown básico del LLM a HTML de Telegram.
+
+    Escapa caracteres HTML primero para evitar inyección, luego convierte
+    **negrita** e *itálica*. No modifica bloques de código ni listas.
+    """
+    text = html.escape(text)
+    text = _BOLD_RE.sub(r"<b>\1</b>", text)
+    text = _ITALIC_RE.sub(r"<i>\1</i>", text)
+    return text
+
 
 # Caracteres iniciales que los lectores de CSV interpretan como fórmulas
 _CSV_FORMULA_CHARS = ("=", "+", "-", "@", "\t", "\r")
@@ -105,14 +123,13 @@ class BotHandlers:
         admin_section = "\n• /reindex — reindexar documentos (solo admins)" if is_admin else ""
 
         await update.message.reply_text(  # type: ignore[union-attr]
-            "📖 *Comandos disponibles:*\n\n"
+            "Comandos disponibles:\n\n"
             "• /start — mensaje de bienvenida\n"
             "• /help — esta ayuda\n"
             "• /fuentes — lista de documentos indexados\n"
             "• /reset — borra tu historial de conversación"
             f"{admin_section}\n\n"
             "Simplemente escribe tu pregunta para obtener una respuesta.",
-            parse_mode="Markdown",
         )
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -138,7 +155,7 @@ class BotHandlers:
             return
 
         lines = "\n".join(f"• {s}" for s in sources)
-        await update.message.reply_text(f"📂 *Documentos disponibles:*\n\n{lines}", parse_mode="Markdown")  # type: ignore[union-attr]
+        await update.message.reply_text(f"Documentos disponibles:\n\n{lines}")  # type: ignore[union-attr]
 
     async def reindex(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Reindexación manual restringida a admins (RF-08)."""
@@ -218,13 +235,18 @@ class BotHandlers:
         self._history.add(user_id, "user", query)
         self._history.add(user_id, "assistant", answer)
 
-        # Formatea respuesta con fuentes
+        # Convierte markdown del LLM a HTML y adjunta fuentes
+        answer_html = _md_to_html(answer)
         if sources:
-            full_response = f"{answer}\n\n📄 *Fuentes:* {', '.join(sources)}"
+            sources_html = ", ".join(html.escape(s) for s in sources)
+            full_response = f"{answer_html}\n\n📄 <b>Fuentes:</b> {sources_html}"
         else:
-            full_response = answer
+            full_response = answer_html
 
-        await update.message.reply_text(full_response, parse_mode="Markdown")  # type: ignore[union-attr]
+        try:
+            await update.message.reply_text(full_response, parse_mode="HTML")  # type: ignore[union-attr]
+        except Exception:
+            await update.message.reply_text(answer, parse_mode=None)  # type: ignore[union-attr]
 
     # ── Log de preguntas sin respuesta (RF-10) ────────────────────────────────
 

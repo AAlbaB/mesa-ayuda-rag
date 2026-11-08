@@ -183,6 +183,16 @@ La evaluación se realizó en dos capas:
 - **Solución:** se añadió una regla al system prompt: "cita la fuente solo cuando el fragmento contiene la información que responde la pregunta; no la cites si solo está relacionado temáticamente."
 - **Efecto:** en P10 el bot respondió sin citar, siendo más honesto sobre la ausencia de información. Scores de P10 bajaron de 0.65 (PDFs anteriores con más contenido salarial mezclado) a 0.45 con los PDFs limpios.
 
+### Ajuste 4 — Bug en parseo de IDs únicos en Pydantic Settings v2
+- **Problema descubierto en prueba real:** con un único ID en `ALLOWED_USER_IDS` (ej. `9193063212`), Pydantic Settings v2 pre-parsea el valor como JSON antes de invocar el validador de campo. `json.loads("9193063212")` devuelve un `int`, no un `str`, por lo que el validador `_parse_int_list` recibía un `int` y retornaba `[]` — nadie tenía acceso.
+- **Solución:** se añadió el caso `isinstance(v, int): return [v]` en el validador. Con múltiples IDs (`"id1,id2"`) el bug no aparecía porque la cadena no es JSON válida y llega sin pre-parsear.
+- **Efecto:** acceso correcto con uno o varios IDs. Los tests de config se actualizaron para pasar `_env_file=None` y evitar que el `.env` local contamine el entorno de pruebas.
+
+### Ajuste 5 — Formato de fuentes migrado de Markdown a HTML
+- **Problema descubierto en prueba real:** `parse_mode="Markdown"` de Telegram falla con nombres de archivo que contienen guiones bajos (ej. `manual_soporte_ti.pdf`), ya que los interpreta como marcadores de itálica. El mensaje de error no llegaba al usuario.
+- **Solución:** el handler formatea las fuentes con HTML (`<b>Fuentes:</b>`) en lugar de Markdown, y añade un fallback a texto plano. La instrucción de citar fuentes se eliminó del system prompt para evitar duplicación — el handler gestiona completamente la sección de fuentes.
+- **Efecto:** las fuentes aparecen correctamente en negrita sin errores, independientemente del nombre del archivo.
+
 ---
 
 ## Limitaciones identificadas

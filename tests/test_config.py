@@ -9,10 +9,15 @@ from src.config import Settings
 
 
 def _base_env(**overrides) -> dict:
-    """Entorno mínimo válido para instanciar Settings en pruebas."""
+    """Entorno mínimo válido para instanciar Settings en pruebas.
+
+    _env_file=None evita que Pydantic Settings lea el .env del proyecto,
+    que contaminaría los valores de los campos y ocultaría errores de validación.
+    """
     base = {
         "telegram_bot_token": "test_token_123",
         "llm_api_key": "sk-test-key",
+        "_env_file": None,
     }
     base.update(overrides)
     return base
@@ -35,12 +40,12 @@ class TestSettingsDefaults:
 
     def test_required_missing_telegram_token(self):
         with pytest.raises(ValidationError) as exc_info:
-            Settings(llm_api_key="sk-test")
+            Settings(llm_api_key="sk-test", _env_file=None)
         assert "telegram_bot_token" in str(exc_info.value)
 
     def test_required_missing_llm_api_key(self):
         with pytest.raises(ValidationError) as exc_info:
-            Settings(telegram_bot_token="token123")
+            Settings(telegram_bot_token="token123", _env_file=None)
         assert "llm_api_key" in str(exc_info.value)
 
 

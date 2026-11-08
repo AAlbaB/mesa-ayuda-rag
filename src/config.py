@@ -70,10 +70,16 @@ class Settings(BaseSettings):
 
     @field_validator("allowed_user_ids", "admin_user_ids", mode="before")
     @classmethod
-    def _parse_int_list(cls, v: str | list) -> list[int]:
-        """Convierte 'id1,id2,id3' a [id1, id2, id3]."""
+    def _parse_int_list(cls, v: str | list | int) -> list[int]:
+        """Convierte 'id1,id2,id3' a [id1, id2, id3].
+
+        Pydantic Settings v2 pre-parsea el valor como JSON antes del validator:
+        un único ID numérico llega como int (json.loads('123') == 123), no como str.
+        """
         if isinstance(v, list):
-            return v
+            return [int(x) for x in v]
+        if isinstance(v, int):
+            return [v]
         if isinstance(v, str) and v.strip():
             return [int(x.strip()) for x in v.split(",") if x.strip()]
         return []
