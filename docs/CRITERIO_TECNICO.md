@@ -15,6 +15,12 @@ La solución requirió tres pasos:
 
 Adicionalmente, para que los tests unitarios puedan ejecutarse sin descargar PyTorch (~1.5 GB), se movieron los imports de `HuggingFaceEmbeddings` y `Chroma` a métodos internos (lazy imports), de forma que importar el módulo `indexer.py` no activa la carga del modelo.
 
+**Segundo hallazgo crítico — Pydantic Settings v2 y el parseo de IDs numéricos**
+
+Durante la prueba real del bot en Telegram se detectó que, a pesar de que el `.env` tenía el ID correcto, el bot denegaba el acceso a todos los usuarios. El diagnóstico con `python -c "from src.config import get_settings; s = get_settings(); print(s.allowed_user_ids)"` retornó `[]`.
+
+La causa fue un comportamiento documentado pero no obvio de Pydantic Settings v2: antes de invocar los `field_validator`, el framework deserializa cada valor del `.env` como JSON. `json.loads("9193063212")` retorna un `int`, no un `str`, de modo que el validador `_parse_int_list` recibía un entero en lugar de la cadena esperada y retornaba `[]` silenciosamente. La corrección fue añadir el caso `isinstance(v, int): return [v]` al inicio del validador. Sin este caso, con un único ID en la lista, nadie podía acceder al bot.
+
 ---
 
 ## 2. ¿Qué decisión tomarías distinto si empezaras de nuevo?
