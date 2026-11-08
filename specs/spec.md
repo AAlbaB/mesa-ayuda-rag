@@ -34,13 +34,13 @@ Este sistema implementa un asistente conversacional en Telegram que responde pre
 
 **Prioridad:** Obligatorio
 
-El sistema lee todos los archivos ubicados en `KNOWLEDGE_BASE_PATH` (por defecto `knowledge_base/`) y los procesa para indexación. Formatos soportados: `.md`, `.txt`, `.pdf`. Soporte para `.docx` es deseable.
+El sistema lee todos los archivos ubicados en `KNOWLEDGE_BASE_PATH` (por defecto `knowledge_base/`) y los procesa para indexación. Formatos soportados: `.md`, `.txt`, `.pdf`, `.docx`.
 
 **Criterios de aceptación:**
 
 | # | Criterio |
 |---|---|
-| AC-01.1 | Dado un archivo `.md`, `.txt` o `.pdf` válido en `knowledge_base/`, al iniciar el bot o ejecutar `/reindex`, el archivo es procesado y sus fragmentos quedan almacenados en el índice. |
+| AC-01.1 | Dado un archivo `.md`, `.txt`, `.pdf` o `.docx` válido en `knowledge_base/`, al iniciar el bot o ejecutar `/reindex`, el archivo es procesado y sus fragmentos quedan almacenados en el índice. |
 | AC-01.2 | Un archivo con encoding UTF-8 se lee correctamente, incluyendo caracteres especiales en español (tildes, ñ). |
 | AC-01.3 | Un archivo ilegible (corrupto, permisos insuficientes, encoding inválido) genera un mensaje de error en el log y **no detiene** la ingesta de los demás archivos. |
 | AC-01.4 | El bot informa al usuario (en el caso de `/reindex`) cuántos documentos fueron procesados y cuántos fallaron. |
