@@ -172,7 +172,8 @@ mesa-ayuda-rag/
 │   ├── reembolso_gastos.txt
 │   ├── politica_trabajo_remoto.md
 │   ├── manual_soporte_ti.pdf
-│   └── guia_bienvenida.pdf
+│   ├── guia_bienvenida.pdf
+│   └── calendario_corporativo_2026.md
 │
 ├── prompts/
 │   └── system_prompt.md     # Prompt de sistema — nunca hardcodeado en el código
@@ -180,14 +181,15 @@ mesa-ayuda-rag/
 ├── specs/                   # Artefactos de Spec Driven Development (existieron antes que el código)
 │   ├── spec.md              # Historias de usuario, requisitos y criterios de aceptación
 │   ├── plan.md              # Arquitectura, componentes y tecnologías
-│   └── tasks.md             # 38 tareas T-00..T-37 con estado
+│   └── tasks.md             # 39 tareas T-00..T-38 con estado
 │
 ├── docs/                    # Documentación técnica
 │   ├── ARQUITECTURA.md      # Este archivo
 │   ├── DECISIONES.md        # 8 decisiones de arquitectura (ADR)
 │   ├── USO_IA.md            # Transparencia sobre uso de IA
 │   ├── EVALUACION.md        # Evaluación de calidad del RAG
-│   └── CRITERIO_TECNICO.md  # Reflexión técnica y análisis de producción
+│   ├── CRITERIO_TECNICO.md  # Reflexión técnica y análisis de producción
+│   └── TRAZABILIDAD.md      # Matriz RF→tarea→commit→prueba→estado
 │
 ├── src/
 │   ├── config.py            # Pydantic Settings: carga .env, valida tipos, falla rápido

@@ -113,6 +113,7 @@
 | T-35 | docs/USO_IA.md: herramientas, prompts representativos, sugerencias rechazadas, verificación manual | Sección 6.4 | Completada |
 | T-36 | docs/EVALUACION.md: ≥10 preguntas (≥3 fuera de alcance, ≥2 de seguimiento), resultados, ajustes | Sección 6.5 | Completada |
 | T-37 | docs/CRITERIO_TECNICO.md: 7 preguntas respondidas | Sección 6.6 | Completada |
+| T-38 | docs/TRAZABILIDAD.md: matriz RF→tarea→commit→prueba→estado; sección de verificación con gaps | Sección 6 | Completada |
 
 ---
 
@@ -129,5 +130,5 @@
 | Pruebas | 4 | 4 | 100% |
 | Docs ficticios | 1 | 1 | 100% |
 | Deseables | 5 | 4 | 80% |
-| Documentación final | 6 | 6 | 100% |
-| **Total** | **38** | **37** | **97%** |
+| Documentación final | 7 | 7 | 100% |
+| **Total** | **39** | **38** | **97%** |
