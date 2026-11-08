@@ -42,10 +42,12 @@ def run_ingestion(
         knowledge_base_path, indexer, incremental=incremental
     )
 
-    # Purga chunks de archivos eliminados del disco
+    # Purga chunks de archivos eliminados del disco y limpia su estado,
+    # para que si se re-agregan con el mismo contenido se reindexen correctamente.
     if deleted_sources:
         logger.info("Purgando chunks de %d archivos eliminados: %s", len(deleted_sources), deleted_sources)
         indexer._delete_by_sources(deleted_sources)
+        _remove_deleted_from_state(deleted_sources, indexer)
 
     if not files_to_process:
         logger.info("No hay archivos nuevos o modificados para indexar")
@@ -110,7 +112,11 @@ def _select_files(
     for f in all_files:
         md5 = VectorIndexer.file_md5(f)
         saved = state.get(str(f), {})
-        if saved.get("md5") != md5:
+        # Reindexar si el MD5 cambió O si los chunks ya no están en ChromaDB.
+        # La segunda condición auto-sana el estado cuando index_state.json y
+        # ChromaDB se desincronizaron (ej. archivo eliminado con código antiguo
+        # que no limpiaba el estado, o volumen de ChromaDB recreado).
+        if saved.get("md5") != md5 or f.name not in indexed_sources:
             changed.append(f)
 
     return changed, deleted_sources
@@ -131,3 +137,20 @@ def _update_state(
                 "indexed_at": now,
             }
     indexer.save_index_state(state)
+
+
+def _remove_deleted_from_state(deleted_names: set[str], indexer: VectorIndexer) -> None:
+    """Elimina de index_state.json las entradas de archivos borrados del disco.
+
+    Las claves del estado son rutas absolutas; deleted_names contiene solo nombres
+    de archivo. Se hace match por nombre para limpiar la entrada correcta.
+    Sin esta limpieza, si el archivo se re-agrega con el mismo contenido su MD5
+    coincide con el estado guardado y no se detecta como nuevo → no se reindexia.
+    """
+    state = indexer.load_index_state()
+    keys_to_remove = [k for k in state if Path(k).name in deleted_names]
+    if keys_to_remove:
+        for k in keys_to_remove:
+            del state[k]
+        indexer.save_index_state(state)
+        logger.debug("Eliminadas %d entradas de index_state.json: %s", len(keys_to_remove), keys_to_remove)
