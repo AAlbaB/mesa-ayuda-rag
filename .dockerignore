@@ -1,0 +1,47 @@
+# Secretos — nunca deben entrar a la imagen
+.env
+.env.local
+
+# Entorno virtual del host (el contenedor instala sus propias dependencias)
+.venv/
+
+# Índice vectorial generado (se monta como volumen de Docker)
+chroma_db/
+index_state.json
+
+# Dato operativo (efímero en contenedor)
+unanswered_questions.csv
+
+# Historial de git (no necesario en imagen de runtime)
+.git/
+.gitignore
+
+# Herramientas de desarrollo y pruebas (no forman parte de la imagen de producción)
+tests/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Documentación (no necesaria en imagen de runtime)
+docs/
+specs/
+README.md
+Prueba técnica*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+
+# IDE y OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

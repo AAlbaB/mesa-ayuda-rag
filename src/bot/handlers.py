@@ -228,8 +228,11 @@ class BotHandlers:
             await update.message.reply_text(_ERROR_MSG)  # type: ignore[union-attr]
             return
 
-        # Registra preguntas sin respuesta (RF-10)
-        if not chunks:
+        # Registra preguntas sin respuesta (RF-10).
+        # Se usa `not sources` en lugar de `not chunks` para capturar también el caso
+        # en que sí se recuperaron chunks pero el LLM detectó que no eran relevantes
+        # y respondió que no tiene información (sources queda vacío en ese caso).
+        if not sources:
             self._log_unanswered(uid_hash, query)
 
         self._history.add(user_id, "user", query)

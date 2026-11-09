@@ -135,7 +135,7 @@ Telegram → BotHandlers.handle_message(update)
 6. RAGChain.run(query, chunks, history)
    │
    ├─ Si chunks == []:
-   │   └─ Retorna _NO_INFO_MESSAGE sin llamar al LLM (RF-04)
+   │   └─ Retorna (_NO_INFO_MESSAGE, []) sin llamar al LLM (RF-04)
    │
    └─ Si chunks > 0:
        Prompt final enviado al LLM:
@@ -151,13 +151,18 @@ Telegram → BotHandlers.handle_message(update)
        │           Pregunta: <query>                            │
        └────────────────────────────────────────────────────────┘
        └─ Llama al LLM configurado (OpenAI / Anthropic / Google)
+       └─ _answer_has_no_info(answer):
+           ├─ True  → sources = []   (LLM declaró no tener información)
+           └─ False → sources = {chunk.format_source() for chunk in chunks}
 
-7. Si chunks == []: _log_unanswered(uid_hash, query) → CSV (RF-10)
+7. Si sources == []: _log_unanswered(uid_hash, query) → CSV (RF-10)
+   (cubre tanto chunks==[] como chunks>0 pero LLM sin información)
 
 8. ConversationHistory.add(user_id, "user", query)
    ConversationHistory.add(user_id, "assistant", answer)
 
-9. reply_text(answer + "\n\n📄 Fuentes: archivo.pdf (pág. 3), politica.md")
+9. Si sources: reply_text(answer + "\n\n📄 Fuentes: archivo.pdf (pág. 3), politica.md")
+   Si no:      reply_text(answer)   ← sin fuentes cuando no hay información
 ```
 
 ---
@@ -229,6 +234,9 @@ mesa-ayuda-rag/
 ├── .env                     # Secretos y configuración local (en .gitignore — nunca subir)
 ├── .env.example             # Plantilla documentada con todas las variables
 ├── .gitignore
+├── .dockerignore            # Excluye .env, .venv, chroma_db y otros de la imagen
+├── Dockerfile               # Imagen python:3.11-slim; usuario sin root; layer cache de deps
+├── docker-compose.yml       # Servicio bot: env_file, volúmenes nombrados, restart policy
 ├── pyproject.toml           # Dependencias, ruff, pytest
 └── README.md
 ```

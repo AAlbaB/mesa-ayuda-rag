@@ -150,6 +150,7 @@ El bot de Telegram es la capa de presentación; todos los componentes de procesa
 | Configuración | pydantic-settings | 2.x | Validación de tipos, defaults, mensajes de error claros en arranque. |
 | Linter/formatter | ruff | 0.6.x | Rápido, reemplaza flake8 + black + isort en una sola herramienta. |
 | Pruebas | pytest | 8.x | Estándar de facto en Python. |
+| Contenedorización | Docker + Compose | — | Ejecución reproducible sin instalar Python ni descargar PyTorch en el host; volúmenes nombrados para persistencia del índice y caché de embeddings. |
 
 ---
 
@@ -327,8 +328,9 @@ mesa-ayuda-rag/
 ├── .env                                 # secretos, en .gitignore
 ├── .env.example                         # plantilla comentada con todas las variables
 ├── .gitignore
+├── .dockerignore                        # excluye .env, .venv, chroma_db y tests de la imagen
+├── Dockerfile                           # imagen python:3.11-slim; usuario sin root (T-31)
+├── docker-compose.yml                   # servicio bot + volúmenes chroma_data y hf_cache (T-31)
 ├── pyproject.toml                       # dependencias, ruff, pytest
 └── README.md
 ```
-
-> **Nota:** Dockerfile (T-31) quedó pendiente — es un deseable según spec.md §NF-02. El bot corre correctamente con `python -m src.main` tras configurar `.env`.

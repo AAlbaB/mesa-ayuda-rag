@@ -127,8 +127,8 @@ La evaluación se realizó en dos capas:
 | Chunks recuperados | 3 (scores: 0.45, 0.41, 0.39) — de `politica_vacaciones.md` y `manual_soporte_ti.pdf` (sin información sobre salario mínimo) |
 | Observación | El retriever recupera chunks relacionados con beneficios salariales de la empresa, pero ninguno contiene el salario mínimo legal colombiano |
 | Respuesta esperada | "No tengo información sobre ese tema en los documentos disponibles" |
-| Respuesta obtenida | "Los documentos disponibles no contienen información sobre el salario mínimo legal colombiano. Para conocer esta cifra, te recomiendo consultar el Ministerio del Trabajo o la página del DANE. 📄 *Fuentes:* guia_bienvenida.pdf" |
-| ¿Correcta? | ⚠️ Parcialmente — el bot citó correctamente que no tiene la info, pero mencionó fuentes que no responden la pregunta. Se ajustó el system prompt para evitar citar fuentes cuando los fragmentos no son relevantes. |
+| Respuesta obtenida (tras Ajuste 4) | "No tengo información sobre ese tema en los documentos disponibles. Te recomiendo consultar directamente con el área de Recursos Humanos o con el equipo de mesa de ayuda." (sin fuentes) |
+| ¿Correcta? | ✅ Sí — corregido mediante Ajuste 4: `_answer_has_no_info()` en `chain.py` detecta la declaración del LLM y retorna `sources=[]`; el handler ya no muestra fuentes irrelevantes y registra la pregunta en el CSV. |
 
 #### P11 — ¿Cuándo es el próximo día festivo?
 | Aspecto | Detalle |
@@ -177,13 +177,12 @@ Contenido: calendario de eventos corporativos 2026, incluyendo "Día de la Famil
 |---|---|---|---|---|
 | En alcance | 7 | 7 | 0 | 0 |
 | Seguimiento | 2 | 2 | 0 | 0 |
-| Fuera de alcance | 3 | 2 | 1 (P10) | 0 |
-| **Total** | **12** | **11** | **1** | **0** |
+| Fuera de alcance | 3 | 3 | 0 | 0 |
+| **Total** | **12** | **12** | **0** | **0** |
 
-**Tasa de respuesta correcta o parcialmente correcta: 100%**  
-**Tasa de respuesta completamente correcta: 11/12 (92%)**
+**Tasa de respuesta correcta: 12/12 (100%)**
 
-> P10 se considera parcial porque el retriever recupera chunks temáticamente cercanos (políticas salariales de empresa) pero el LLM reconoce correctamente que el salario mínimo legal no está en los documentos y lo declara. El comportamiento es el esperado; el score bajo (0.45 máx.) sugiere que subir el threshold a 0.40 mejoraría el filtrado de preguntas fuera de alcance sin afectar las preguntas válidas.
+> P10 fue corregida de parcial a correcta tras Ajuste 4. El retriever sigue recuperando chunks temáticamente cercanos (scores 0.45–0.39), pero ahora `_answer_has_no_info()` en `chain.py` detecta que el LLM declaró no tener información y descarta las fuentes. El bot responde sin citar documentos irrelevantes y registra la pregunta en `unanswered_questions.csv`.
 
 ---
 
@@ -199,10 +198,15 @@ Contenido: calendario de eventos corporativos 2026, incluyendo "Día de la Famil
 - **Solución:** reemplazar los PDFs por versiones de columna única con contenido completo. Los nuevos PDFs pasan de 2.1–2.6 KB a 8.6–9.7 KB, con 7 páginas adicionales indexadas.
 - **Efecto:** P05 pasó de 0 chunks a 1 chunk con score 0.49. El índice creció de 21 a 36 chunks. Cross-document retrieval mejoró (P04 y P07 recuperan chunks de múltiples documentos).
 
-### Ajuste 3 — System prompt para citas con contexto insuficiente (P10)
+### Ajuste 3 — System prompt para citas con contexto insuficiente (P10, mitigación parcial)
 - **Problema:** el LLM citaba fuentes aunque el fragmento recuperado no respondía la pregunta (ej. citar `politica_vacaciones.md` al preguntar por el salario mínimo legal).
-- **Solución:** se añadió una regla al system prompt: "cita la fuente solo cuando el fragmento contiene la información que responde la pregunta; no la cites si solo está relacionado temáticamente."
-- **Efecto:** en P10 el bot respondió sin citar, siendo más honesto sobre la ausencia de información. Scores de P10 bajaron de 0.65 (PDFs anteriores con más contenido salarial mezclado) a 0.45 con los PDFs limpios.
+- **Solución inicial:** se añadió una regla al system prompt: "cita la fuente solo cuando el fragmento contiene la información que responde la pregunta; no la cites si solo está relacionado temáticamente."
+- **Efecto parcial:** redujo la frecuencia del problema pero no lo eliminó; el LLM ignoraba la instrucción en algunos casos. Resuelto definitivamente con Ajuste 4 (ver abajo).
+
+### Ajuste 4 — Detección de respuestas sin información en `chain.py` y logging de CSV (P10, corrección definitiva)
+- **Problema (dos síntomas):** (1) `chain.py` extraía fuentes de los chunks recuperados independientemente de si el LLM los usó para responder — cuando el LLM decía "No tengo información..." las fuentes se mostraban igual. (2) `handlers.py` solo registraba preguntas en `unanswered_questions.csv` cuando `chunks == []`, sin cubrir el caso en que chunks fueron recuperados pero el LLM igualmente declaró no tener información.
+- **Solución:** función `_answer_has_no_info(answer)` en `chain.py` que detecta señales lingüísticas en la respuesta del LLM ("no tengo información", "no hay información", etc.); cuando se detectan, `sources` se retorna vacío. En `handlers.py` la condición de logging se cambió de `not chunks` a `not sources`, cubriendo ambos casos.
+- **Efecto:** P10 pasa de parcial a correcta (12/12). El bot ya no muestra fuentes cuando declara no tener información. Preguntas fuera de alcance quedan registradas en `unanswered_questions.csv` incluso cuando el retriever recuperó chunks marginalmente relevantes.
 
 ### Ajuste 4 — Bug en parseo de IDs únicos en Pydantic Settings v2
 - **Problema descubierto en prueba real:** con un único ID en `ALLOWED_USER_IDS` (ej. `9193063212`), Pydantic Settings v2 pre-parsea el valor como JSON antes de invocar el validador de campo. `json.loads("9193063212")` devuelve un `int`, no un `str`, por lo que el validador `_parse_int_list` recibía un `int` y retornaba `[]` — nadie tenía acceso.
