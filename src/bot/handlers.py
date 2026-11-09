@@ -6,6 +6,7 @@ import csv
 import html
 import logging
 import re
+from datetime import UTC
 from pathlib import Path
 
 from telegram import Update
@@ -255,7 +256,7 @@ class BotHandlers:
 
     def _log_unanswered(self, uid_hash: str, query: str) -> None:
         """Registra la pregunta en CSV con timestamp y hash del user_id."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         try:
             is_new = not self._unanswered_path.exists()
@@ -264,7 +265,7 @@ class BotHandlers:
                 if is_new:
                     writer.writerow(["timestamp", "user_id_hash", "query"])
                 writer.writerow([
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                     uid_hash,
                     _sanitize_csv_cell(query),
                 ])

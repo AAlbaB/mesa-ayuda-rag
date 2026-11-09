@@ -20,7 +20,9 @@ _NO_INFO_MESSAGE = (
 )
 
 
-def build_llm(provider: str, model: str, api_key: str, temperature: float, max_tokens: int) -> BaseChatModel:
+def build_llm(
+    provider: str, model: str, api_key: str, temperature: float, max_tokens: int
+) -> BaseChatModel:
     """Instancia el LLM según el proveedor configurado.
 
     Permite cambiar de proveedor solo modificando LLM_PROVIDER en .env.

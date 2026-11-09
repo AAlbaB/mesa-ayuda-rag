@@ -34,7 +34,7 @@ class VectorIndexer:
         self._embedding_model = embedding_model  # lazy: se instancia al primer uso
         self._store: Chroma | None = None
 
-    def _get_embeddings(self):  # noqa: ANN201
+    def _get_embeddings(self):
         from langchain_community.embeddings import HuggingFaceEmbeddings  # lazy
         if not hasattr(self, "_embeddings_obj"):
             self._embeddings_obj = HuggingFaceEmbeddings(model_name=self._embedding_model)

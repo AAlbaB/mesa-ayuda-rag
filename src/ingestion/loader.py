@@ -50,7 +50,9 @@ def load_documents(knowledge_base_path: Path) -> tuple[list[Document], list[str]
             logger.exception("Error al cargar %s", file_path.name)
             errors.append(str(file_path))
 
-    logger.info("Carga completada: %d documentos, %d errores", len(files) - len(errors), len(errors))
+    logger.info(
+        "Carga completada: %d documentos, %d errores", len(files) - len(errors), len(errors)
+    )
     return docs, errors
 
 

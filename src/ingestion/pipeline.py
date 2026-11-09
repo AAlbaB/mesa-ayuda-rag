@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.ingestion.chunker import DocumentChunker
@@ -45,7 +45,9 @@ def run_ingestion(
     # Purga chunks de archivos eliminados del disco y limpia su estado,
     # para que si se re-agregan con el mismo contenido se reindexen correctamente.
     if deleted_sources:
-        logger.info("Purgando chunks de %d archivos eliminados: %s", len(deleted_sources), deleted_sources)
+        logger.info(
+            "Purgando chunks de %d archivos eliminados: %s", len(deleted_sources), deleted_sources
+        )
         indexer._delete_by_sources(deleted_sources)
         _remove_deleted_from_state(deleted_sources, indexer)
 
@@ -129,7 +131,7 @@ def _update_state(
 ) -> None:
     """Actualiza index_state.json; excluye archivos que fallaron al cargar."""
     state = indexer.load_index_state()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     for f in files:
         if str(f) not in failed_paths:
             state[str(f)] = {
@@ -153,4 +155,6 @@ def _remove_deleted_from_state(deleted_names: set[str], indexer: VectorIndexer) 
         for k in keys_to_remove:
             del state[k]
         indexer.save_index_state(state)
-        logger.debug("Eliminadas %d entradas de index_state.json: %s", len(keys_to_remove), keys_to_remove)
+        logger.debug(
+            "Eliminadas %d entradas de index_state.json: %s", len(keys_to_remove), keys_to_remove
+        )
