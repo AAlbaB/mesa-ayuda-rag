@@ -229,3 +229,27 @@ El overhead de Gitflow (crear rama, abrir PR, hacer merge) es bajo en un proyect
 
 **Trade-offs aceptados**  
 Para un proyecto de este tamaño, Gitflow agrega pasos que en equipos grandes tienen sentido para coordinar trabajo paralelo, pero que aquí resuelven un problema diferente: disciplina de entrega y legibilidad del historial. El trade-off consciente es que cada feature requiere al menos tres comandos adicionales (`checkout -b`, `push`, `gh pr create`) que en un commit directo no existirían. Se acepta este costo porque el resultado — trazabilidad entre requisito, rama, PR y commit — aporta directamente al criterio de evaluación del proyecto.
+
+---
+
+## D-11 Modo de operación del bot: polling vs. webhook
+
+**Contexto**  
+`python-telegram-bot` soporta dos modos para recibir mensajes: polling (el bot consulta periódicamente a la API de Telegram) y webhook (Telegram envía los mensajes a un endpoint HTTPS del servidor). El documento de evaluación no especifica ninguno de los dos; ambos son técnicamente válidos.
+
+**Opciones consideradas**
+- **Webhook:** Telegram empuja los mensajes al servidor en tiempo real. Requiere un servidor con IP/dominio público, certificado TLS válido y un reverse proxy (nginx, Caddy) o un túnel (ngrok). Latencia mínima.
+- **Polling (`run_polling()`):** El bot consulta la API de Telegram cada pocos segundos. No requiere infraestructura expuesta. Latencia de 1–2 segundos, aceptable para un asistente interno.
+
+**Decisión**  
+Polling con `Application.run_polling()`.
+
+**Justificación**  
+El criterio determinante fue la facilidad de setup para el evaluador. Con polling, ejecutar el bot requiere solo un token válido en `.env` y un comando (`python -m src.main` o `docker compose up`); no hay dependencias de infraestructura externa. Webhook agregaría como mínimo: un dominio o IP pública, un certificado TLS (Let's Encrypt o autofirmado registrado en Telegram), y la configuración de un reverse proxy — pasos que no aportan al criterio evaluado y que varían según el entorno del evaluador.
+
+Para el volumen de usuarios de una mesa de ayuda interna (decenas de usuarios, no miles de mensajes por segundo), la diferencia de latencia entre polling y webhook es imperceptible. El modo polling es el estándar en proyectos de desarrollo, pruebas técnicas y despliegues de baja escala.
+
+La decisión está documentada como supuesto **A-02** en `specs/spec.md` y como exclusión consciente en la sección "Fuera de alcance" del mismo documento.
+
+**Trade-offs aceptados**  
+Polling no es adecuado para producción a escala: mantiene una conexión persistente con la API de Telegram y el bot debe estar activo para recibir mensajes (no hay entrega diferida). Para producción, la migración a webhook es directa — `run_polling()` se reemplaza por `run_webhook()` más la configuración del servidor — y está documentada como mejora en `CRITERIO_TECNICO.md §3`.
