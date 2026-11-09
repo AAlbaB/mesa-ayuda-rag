@@ -6,6 +6,7 @@ import csv
 import html
 import logging
 import re
+from datetime import UTC
 from pathlib import Path
 
 from telegram import Update
@@ -97,6 +98,7 @@ class BotHandlers:
     # ── Comandos (RF-06) ──────────────────────────────────────────────────────
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Responde al comando /start con el mensaje de bienvenida (RF-06)."""
         user_id = update.effective_user.id  # type: ignore[union-attr]
         if not self._check_access(user_id):
             await update.message.reply_text(_DENIED_MSG)  # type: ignore[union-attr]
@@ -114,6 +116,7 @@ class BotHandlers:
         )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Responde al comando /help con la lista de comandos disponibles (RF-06)."""
         user_id = update.effective_user.id  # type: ignore[union-attr]
         if not self._check_access(user_id):
             await update.message.reply_text(_DENIED_MSG)  # type: ignore[union-attr]
@@ -133,6 +136,7 @@ class BotHandlers:
         )
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Borra el historial conversacional del usuario vía /reset (RF-06)."""
         user_id = update.effective_user.id  # type: ignore[union-attr]
         if not self._check_access(user_id):
             await update.message.reply_text(_DENIED_MSG)  # type: ignore[union-attr]
@@ -142,6 +146,7 @@ class BotHandlers:
         await update.message.reply_text("✅ Historial de conversación borrado.")  # type: ignore[union-attr]
 
     async def fuentes(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Lista los documentos indexados actualmente vía /fuentes (RF-06)."""
         user_id = update.effective_user.id  # type: ignore[union-attr]
         if not self._check_access(user_id):
             await update.message.reply_text(_DENIED_MSG)  # type: ignore[union-attr]
@@ -228,8 +233,11 @@ class BotHandlers:
             await update.message.reply_text(_ERROR_MSG)  # type: ignore[union-attr]
             return
 
-        # Registra preguntas sin respuesta (RF-10)
-        if not chunks:
+        # Registra preguntas sin respuesta (RF-10).
+        # Se usa `not sources` en lugar de `not chunks` para capturar también el caso
+        # en que sí se recuperaron chunks pero el LLM detectó que no eran relevantes
+        # y respondió que no tiene información (sources queda vacío en ese caso).
+        if not sources:
             self._log_unanswered(uid_hash, query)
 
         self._history.add(user_id, "user", query)
@@ -252,7 +260,7 @@ class BotHandlers:
 
     def _log_unanswered(self, uid_hash: str, query: str) -> None:
         """Registra la pregunta en CSV con timestamp y hash del user_id."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         try:
             is_new = not self._unanswered_path.exists()
@@ -261,7 +269,7 @@ class BotHandlers:
                 if is_new:
                     writer.writerow(["timestamp", "user_id_hash", "query"])
                 writer.writerow([
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                     uid_hash,
                     _sanitize_csv_cell(query),
                 ])

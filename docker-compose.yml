@@ -1,0 +1,22 @@
+services:
+  bot:
+    build: .
+    env_file: .env
+    volumes:
+      # Documentos de la base de conocimiento — montado en lectura para que
+      # /reindex pueda detectar cambios sin necesidad de reconstruir la imagen.
+      - ./knowledge_base:/app/knowledge_base:ro
+      # Prompt de sistema — montado para permitir ajustes sin reconstruir.
+      - ./prompts:/app/prompts:ro
+      # Índice vectorial persistente: sobrevive reinicios y recreaciones del contenedor.
+      - chroma_data:/app/chroma_db
+      # Caché del modelo de embeddings: evita re-descargar PyTorch (~1.5 GB) en cada inicio.
+      - hf_cache:/app/.cache/huggingface
+      # Preguntas sin respuesta: visible en el host en tiempo real (el archivo debe
+      # existir antes de levantar el contenedor; Docker lo crearía como directorio si no).
+      - ./unanswered_questions.csv:/app/unanswered_questions.csv
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
+  hf_cache:

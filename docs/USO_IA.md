@@ -29,7 +29,7 @@ No se utilizaron otras herramientas de IA de forma sistemática. Claude Code fue
 
 El proyecto siguió un ciclo corto por tarea:
 
-1. El desarrollador describía la tarea con contexto técnico suficiente (ej. "implementa el sanitizador con 7 patrones de prompt injection, debe logguear warning pero no bloquear el mensaje").
+1. El desarrollador describía la tarea con contexto técnico suficiente.
 2. Claude Code generaba el código o documento.
 3. El desarrollador leía el resultado, lo probaba si era código (ejecutando los tests o inspeccionando manualmente), y pedía correcciones específicas.
 4. Se hacía commit con mensaje Conventional Commits que referenciaba la tarea (`[T-XX]`).
@@ -40,41 +40,73 @@ Para tareas grandes (ej. `handlers.py` con todo el pipeline RAG), el desarrollad
 
 ## 4. Prompts representativos
 
-### Prompt 1 — Especificación inicial
+### Prompt 1 — Arranque por fases con compuerta de aprobación
 
-> *"Contexto: prueba técnica 'Asistente de mesa de ayuda con RAG en Telegram' para Servicios Grupo Bios S.A.S. [...] La metodología es Spec Driven Development (SDD) — specs deben estar commitadas antes de cualquier código. Stack aprobado: Python 3.11+, python-telegram-bot v21, LangChain 0.3.x, ChromaDB, HuggingFace embeddings local (paraphrase-multilingual-MiniLM-L12-v2), OpenAI GPT-4o-mini, .env-only config, Gitflow. Crea specs/spec.md, specs/plan.md y specs/tasks.md con el estándar SDD."*
+> *”Contexto: prueba técnica “Asistente de mesa de ayuda con RAG en Telegram”. Requisitos completos en ./Prueba_técnica_-_Analista_Transformación_Digital.md. Léelo completo y trátalo como fuente de verdad. Entrega límite: lunes 09/11/2026, 12:00 m. Hoy es viernes 06/11/2026.*
+>
+> *Metodología obligatoria: Spec Driven Development. La especificación debe existir y estar commiteada ANTES que cualquier código. Un solo commit o specs posteriores al código invalidan la entrega.*
+>
+> *FASE 0 — Análisis (sin escribir código ni archivos):*
+> *1. Resume: requisitos obligatorios vs. deseables (RF-01..RF-10), no funcionales (parametrización, ejecución, seguridad, calidad), entregables y criterios que invalidan la entrega.*
+> *2. Lista ambigüedades y supuestos que debo confirmar. Propón opciones con trade-offs para: lenguaje [Python/Java/otro], framework de Telegram, orquestación RAG vs. implementación propia, almacén vectorial local, embeddings locales vs. API, LLM por defecto, fragmentación, configuración (.env vs. YAML). Recomienda una opción por tema y espera mi decisión.*
+> *3. Propón un cronograma realista hasta el lunes 12:00, priorizando obligatorios sobre deseables.*
+>
+> *FASE 1 — Especificación (tras mi aprobación de la Fase 0):*
+> *1. `git init`, `.gitignore` (sin .env, índices, venv, dependencias) y primer commit.*
+> *2. Crear specs/spec.md (historias de usuario, requisitos refinados con criterios de aceptación verificables, supuestos, fuera de alcance), specs/plan.md (arquitectura, componentes, modelo de datos, flujos; referencia los RF) y specs/tasks.md (tareas T-01, T-02… vinculadas a requisitos, con estado).*
+> *3. Commit solo de specs. Detente y espera mi aprobación.*
+>
+> *FASE 2 — Implementación (tras aprobar specs):*
+> *- Una tarea de tasks.md a la vez, con commits pequeños en Conventional Commits que referencien la tarea: `feat(retrieval): agrega umbral de similitud [T-07]`.*
+> *- Orden: estructura base y config → ingesta/indexación (.md, .txt, .pdf; persistente) → recuperación y respuesta con fuente → manejo de lo desconocido → historial por usuario → comandos (/start, /help, /reset, /fuentes) → control de acceso → rate limit → pruebas → deseables (/reindex, indexación incremental, log de preguntas sin respuesta, .docx, Docker).*
+> *- Si cambio de decisión, actualiza specs y registra el motivo.*
+>
+> *Reglas transversales:*
+> *- Cero secretos en código o git; incluye .env.example comentado con todas las variables del documento (sección 4.1) y system prompt en prompts/system_prompt.md.*
+> *- Mitigación de prompt injection documentada e implementada.*
+> *- Errores visibles al usuario (LLM caído, timeout, documento ilegible, mensaje vacío/no textual) y logs estructurados sin secretos.*
+> *- Pruebas de lógica central (config, chunking, retrieval, control de acceso).*
+> *- Docstrings, type hints, formateador y linter configurados.*
+> *- Ejecutable con README en máximo 3-4 comandos; no depender del contenido de mis documentos de ejemplo.*
+> *- Incluye 3-5 documentos ficticios en knowledge_base/ (al menos uno PDF).*
+> *- Prioriza pocas cosas bien hechas sobre muchas a medias.*
+>
+> *FASE 3 — Documentación (README.md, docs/ARQUITECTURA.md, DECISIONES.md, USO_IA.md, EVALUACION.md con ≥10 preguntas: ≥3 fuera de alcance y ≥2 de seguimiento, CRITERIO_TECNICO.md con las 7 preguntas). Ve registrando decisiones y uso de IA durante el desarrollo, no al final.*
+>
+> *Empieza solo con la FASE 0.”*
 
-**Por qué así:** Se dio todo el contexto de la prueba en un solo prompt, incluyendo la metodología (SDD), el stack ya aprobado y las restricciones (Gitflow, .env-only). Sin ese contexto, Claude Code habría propuesto un stack diferente y no habría entendido la restricción de que los specs debían existir antes que el código.
+**Por qué así:**
+- **Fases con aprobación:** el documento invalida la entrega si las specs se commitean después del código, así que separé análisis, especificación, implementación y documentación, y exigí detenerse a esperar mi aprobación entre fases.
+- **Decisiones con opciones, no impuestas:** pedí alternativas con trade-offs en lenguaje, framework, almacén vectorial, embeddings, LLM, chunking y configuración, para decidir y poder justificar después cada elección en DECISIONES.md.
+- **Restricciones desde el inicio:** incluí los criterios de invalidación (secretos, commits pequeños con ID de tarea, specs primero) y las reglas transversales para que el agente las aplicara desde el principio en lugar de corregirlas al final.
+- **Alcance acotado:** terminé con “Empieza solo con la FASE 0” para evitar que escribiera código antes de revisar el plan.
+- **Origen:** lo redacté con ayuda de Claude (chat) a partir del documento de requisitos y lo ejecuté en Claude Code.
 
-### Prompt 2 — Implementación del sanitizador con restricción de seguridad
+### Prompt 2 — Diagnóstico del bug crítico de ChromaDB
 
-> *"Implementa src/security/sanitizer.py: truncado a 2000 chars; detecta 7 patrones de inyección con regex; solo logguea warning (no bloquea el mensaje porque el system prompt es la defensa real); doc de cada patrón con la técnica que mitiga."*
+> *"El bot arranca sin errores pero ante cualquier pregunta responde siempre 'No tengo información sobre ese tema', incluso para preguntas literales del documento. Los logs muestran que retrieve() devuelve []. Revisa indexer.py: ¿está configurado hnsw:space=cosine en la colección de ChromaDB? ¿Los scores de similarity_search_with_relevance_scores son positivos?"*
 
-**Por qué así:** Se especificó el comportamiento exacto (no bloquear) y el motivo de diseño (el system prompt es la defensa real). Sin eso, Claude Code habría propuesto bloquear el mensaje, lo que habría dado falsos positivos en preguntas legítimas con palabras como "ignora" o "olvida".
+**Por qué así:** Fue el bug más crítico del proyecto — sin `hnsw:space=cosine`, ChromaDB usa distancia L2 y los scores son negativos, lo que hace que el filtro por `SIMILARITY_THRESHOLD` descarte todos los chunks. El prompt va directo a la causa raíz con preguntas verificables: si los scores son negativos, el espacio de similitud está mal configurado.
 
-### Prompt 3 — Corrección de conflicto de versiones
+### Prompt 3 — Eliminación de fuentes duplicadas entre LLM y handler
 
-> *"langchain-huggingface está actualizando langchain-core a 1.x, rompiendo langchain 0.3.x. También chromadb 1.5.9 se instaló con API incompatible. Solución: quitar langchain-huggingface y langchain-chroma de las dependencias, usar langchain_community.embeddings.HuggingFaceEmbeddings y langchain_community.vectorstores.Chroma, pinear chromadb<1.0.0, actualizar indexer.py, recrear el venv."*
+> *"El bot muestra las fuentes dos veces: el LLM las cita dentro del texto porque el system prompt se lo pide, y handlers.py las añade al pie del mensaje. Elimina la instrucción de citar fuentes de system_prompt.md y deja que solo el handler las añada en HTML."*
 
-**Por qué así:** El desarrollador ya había diagnosticado el problema; el prompt tenía la causa raíz y la solución. Claude Code ejecutó los cambios coordinados en pyproject.toml, indexer.py y la recreación del venv.
+**Por qué así:** Identificar una responsabilidad duplicada entre el prompt de sistema y el código requiere ver ambos artefactos a la vez. La solución con una sola instrucción coordinó cambios en dos archivos distintos (`system_prompt.md` y `handlers.py`) sin ambigüedad sobre cuál debía ceder.
 
-### Prompt 4 — Lazy imports para tests sin torch
+### Prompt 4 — Bug report por comportamiento observable (reindexación)
 
-> *"Los tests no deben requerir instalar torch (1.5 GB) para correr. Mover los imports de HuggingFaceEmbeddings y Chroma a lazy (dentro de los métodos) en indexer.py, y mover el import de VectorIndexer a TYPE_CHECKING en retriever.py."*
+> *"Cuando saco archivos del knowledge_base y uso reindex funciona correctamente porque los saca y no salen en fuentes, pero cuando los vuelvo a agregar a la carpeta y uso reindex no los toma."*
 
-**Por qué así:** Se especificó exactamente el mecanismo (lazy imports + TYPE_CHECKING), no solo el objetivo. Eso evitó soluciones alternativas como mocking a nivel de módulo, que habrían complicado el código de producción.
+**Por qué así:** El prompt describe el síntoma exacto observado, no una hipótesis sobre el código. Claude Code trazó la causa raíz hasta `index_state.json`: al eliminar un archivo, los chunks se purgaban de ChromaDB pero la entrada del estado no se limpiaba; al re-agregar el mismo archivo, el MD5 coincidía y no se detectaba como nuevo. La corrección requirió dos cambios coordinados en `pipeline.py`.
 
-### Prompt 5 — Auditoría de seguridad
+### Prompt 5 — Diagnóstico de bugs por log de error y comportamiento del contenedor
 
-> *"Revisa src/security/, src/ingestion/pipeline.py y src/bot/handlers.py buscando: 1) user_id en texto plano en logs, 2) manejo incompleto de archivos eliminados en el modo incremental, 3) inyección de fórmulas CSV en el log de preguntas sin respuesta, 4) cualquier otro problema de seguridad visible."*
+> *[Logs de Docker con `PermissionError: [Errno 13] Permission denied: '/home/botuser/.cache/huggingface/hub'`]*
+>
+> *"Funcionó el contenedor pero no se escribieron las preguntas no respondidas en: unanswered_questions.csv"*
 
-**Por qué así:** Se listaron explícitamente las categorías de vulnerabilidad a buscar. Una pregunta genérica "¿tiene problemas de seguridad?" habría producido una revisión superficial.
-
-### Prompt 6 — Diagnóstico de bug durante la prueba real
-
-> *"El bot arranca bien pero rechaza al usuario aunque el ID correcto está en el .env. Ejecuta: `.venv/Scripts/python -c "from src.config import get_settings; s = get_settings(); print('allowed:', s.allowed_user_ids)"`"*
-
-**Por qué así:** En lugar de revisar el código a ciegas, el prompt aisló el problema en una sola variable: si `get_settings()` devuelve `[]` con el `.env` presente, el bug está en el parseo de la config, no en el bot. Esa salida (`allowed: []`) fue suficiente para identificar que Pydantic Settings v2 pre-parsea el valor como JSON (`json.loads("9193063212") == 9193063212`, un `int`, no un `str`) antes de invocar el validador de campo. El prompt de diagnóstico previno varios ciclos de prueba y error en el código del bot.
+**Por qué así:** Dos bugs distintos reportados por observación directa del sistema corriendo, no por revisión de código. El primero se diagnosticó moviendo `HF_HOME` a `/app/.cache/huggingface` para que quedara bajo el `chown -R` del Dockerfile. El segundo llevó a descubrir que la condición `not chunks` era insuficiente: el retriever devolvía chunks sobre el umbral para preguntas fuera de alcance, y el LLM declaraba no tener información — pero el log y las fuentes no lo capturaban. Se añadió `_answer_has_no_info()` y se cambió la condición a `not sources`.
 
 ---
 
@@ -82,29 +114,29 @@ Para tareas grandes (ej. `handlers.py` con todo el pipeline RAG), el desarrollad
 
 Esta sección es la más relevante para demostrar criterio sobre lo generado.
 
-**Rechazo 1 — Build backend incorrecto en pyproject.toml**  
-Claude Code generó `build-backend = "setuptools.backends.legacy:build"`. Al ejecutar la instalación, esta ruta no existe en setuptools moderno. Se corrigió a `setuptools.build_meta`. Lección: siempre verificar que el código generado funciona antes de hacer commit.
+**Rechazo 1 — langchain-huggingface como dependencia principal**  
+Claude Code propuso inicialmente `langchain-huggingface` y `langchain-chroma` como las dependencias para embeddings y vector store. Esto creó un conflicto de versiones: `langchain-huggingface` actualiza automáticamente `langchain-core` a 1.x, rompiendo `langchain 0.3.x`. Se rechazó y se migró a `langchain-community`, que es compatible con `langchain-core 0.3.x`.
 
-**Rechazo 2 — SHA-256 simple para user_id en logs**  
-La primera versión de `hash_user_id()` usaba `hashlib.sha256(str(user_id).encode()).hexdigest()`. Los user_ids de Telegram son números secuenciales en un rango acotado (~100M IDs), lo que hace esta función vulnerable a ataques de preimagen por fuerza bruta (un atacante puede hashear todos los IDs posibles y buscar coincidencias en el log). Se rechazó y se implementó HMAC-SHA256 con `LOG_HASH_KEY` del entorno.
+**Rechazo 2 — pip install en el Python del sistema**  
+Durante la generación de PDFs ficticios, Claude Code intentó ejecutar `pip install fpdf2` sobre el Python del sistema en lugar del entorno virtual del proyecto. Se rechazó; se estableció la regla de usar siempre `.venv/Scripts/pip` para cualquier instalación durante todo el proyecto.
 
-**Rechazo 3 — langchain-huggingface como dependencia principal**  
-Claude Code propuso inicialmente `langchain-huggingface` y `langchain-chroma` como las dependencias para embeddings y vector store. Esto creó el conflicto de versiones descrito en §1. Se rechazó y se migró a `langchain-community`.
-
-**Rechazo 4 — pip install en el Python del sistema**  
-Durante la generación de PDFs ficticios, Claude Code intentó ejecutar `pip install fpdf2` sobre el Python del sistema en lugar del entorno virtual del proyecto. Se rechazó; se estableció la regla de usar siempre `.venv/Scripts/pip` para cualquier instalación.
-
-**Rechazo 5 — Commits directamente en master**  
+**Rechazo 3 — Commits directamente en master**  
 Claude Code hizo el primer commit de código directamente en la rama `master`. Se rechazó y se estableció el flujo Gitflow: `master` solo recibe merges `--no-ff` desde `develop`, todo el desarrollo ocurre en `feature/*`.
 
-**Rechazo 6 — Bloquear mensajes detectados como inyección**  
-La propuesta inicial del sanitizador bloqueaba mensajes que coincidieran con los patrones de inyección. Se rechazó porque genera falsos positivos: palabras como "ignora", "olvida" o "pretende" aparecen en preguntas legítimas ("¿puedo ignorar las instrucciones del jefe?"). La defensa real es el system prompt; el sanitizador solo registra el intento.
-
-**Rechazo 7 — parse_mode="Markdown" para mensajes con nombres de archivo**  
+**Rechazo 4 — parse_mode="Markdown" para mensajes con nombres de archivo**  
 La propuesta inicial formateaba todos los mensajes del bot con `parse_mode="Markdown"`. En la prueba real, los nombres de archivo con guiones bajos (`manual_soporte_ti.pdf`) provocaron errores de Telegram ("Can't parse entities") porque los guiones bajos se interpretan como marcadores de itálica. Se rechazó y se migró a `parse_mode="HTML"` con un helper `_md_to_html()` que convierte `**negrita**` a `<b>negrita</b>` y escapa caracteres HTML antes de enviar.
 
-**Rechazo 8 — Validador de IDs sin manejo del tipo int**  
+**Rechazo 5 — Validador de IDs sin manejo del tipo int**  
 El validador `_parse_int_list` original solo manejaba `str` y `list`. Durante la prueba real se descubrió que Pydantic Settings v2 pre-parsea los valores del `.env` como JSON antes de invocar los validadores: un ID único como `9193063212` llega como `int`, no como `str`. El validador retornaba `[]` y nadie tenía acceso. Se rechazó la implementación original y se añadió el caso `isinstance(v, int): return [v]`.
+
+**Rechazo 6 — Usuario root en el contenedor Docker con HF_HOME en /home**  
+Claude Code generó el Dockerfile con `HF_HOME=/home/botuser/.cache/huggingface`. Al levantar el contenedor, el volumen nombrado `hf_cache` se montaba sobre ese directorio y era creado por Docker como root, impidiendo que `botuser` escribiera en él (`PermissionError: [Errno 13] Permission denied`). Se corrigió moviendo `HF_HOME` a `/app/.cache/huggingface` y creando ese directorio dentro del `chown -R botuser:botuser /app` del Dockerfile, de modo que el volumen se monta sobre una ruta que ya pertenece al usuario correcto.
+
+**Rechazo 7 — Condición `not chunks` para registrar preguntas sin respuesta**  
+La implementación original de `handlers.py` solo registraba en `unanswered_questions.csv` cuando el retriever no devolvía ningún chunk (`not chunks`). Esto dejaba sin registrar el caso en que sí se recuperaban chunks pero el LLM detectaba que no respondían la pregunta. Verificado en prueba real: preguntas fuera de alcance como "¿Qué clima hace hoy en Bogotá?" no se registraban y además mostraban fuentes junto al mensaje "No tengo información". Se corrigió añadiendo `_answer_has_no_info()` en `chain.py` (retorna `sources=[]` cuando el LLM declara no tener información) y cambiando la condición de log a `not sources` en `handlers.py`.
+
+**Rechazo 8 — `index_state.json` no se limpiaba al eliminar archivos**  
+Al eliminar un archivo de `knowledge_base/` y ejecutar `/reindex`, `_delete_by_sources()` purgaba correctamente los chunks de ChromaDB pero no eliminaba la entrada correspondiente en `index_state.json`. Si el archivo se volvía a agregar con el mismo contenido, el MD5 coincidía con el estado guardado y `_select_files()` no lo marcaba como nuevo — el archivo quedaba sin indexar silenciosamente. Se corrigió con `_remove_deleted_from_state()` que limpia el estado al purgar, y añadiendo un cross-check contra ChromaDB en `_select_files()` para auto-sanar desincronizaciones previas.
 
 ---
 
@@ -112,14 +144,15 @@ El validador `_parse_int_list` original solo manejaba `str` y `list`. Durante la
 
 | Aspecto | Método de verificación |
 |---|---|
-| **Conflictos de versiones** | `pip show langchain-core chromadb` antes y después de cada instalación |
 | **Generación de PDFs** | Abrir los archivos PDF en el visor del sistema para verificar que el texto era legible y el formato correcto |
 | **Lazy imports** | Verificar que `python -m pytest tests/ -v` corre sin instalar sentence-transformers |
-| **40 tests pasan** | `pytest tests/ -v` con las dependencias de producción instaladas |
+| **Tests pasan** | `pytest tests/ -v` con las dependencias de producción instaladas |
 | **Patrón Gitflow** | `git log --oneline --graph` para verificar la historia de ramas |
 | **Credenciales fuera del repositorio** | `git log --all --full-history -- .env` para confirmar que el archivo nunca fue commitado |
-| **Linting** | `ruff check src/ tests/` para verificar que el código no tiene errores de estilo |
-| **Prueba real del bot en Telegram** | Se probaron los 5 comandos y preguntas de la evaluación con el bot corriendo en modo polling; se diagnosticaron y corrigieron 3 bugs (acceso bloqueado, Markdown con guiones bajos, duplicación de fuentes) antes del merge a master |
+| **Prueba real del bot en Telegram** | Se probaron los 5 comandos y preguntas de la evaluación con el bot corriendo en modo polling; se diagnosticaron y corrigieron bugs (acceso bloqueado, Markdown con guiones bajos, fuentes mostradas sin información, preguntas no registradas en CSV) antes del merge a master |
+| **Contenedor Docker funcional** | `docker compose up --build` y prueba del bot desde Telegram con el contenedor corriendo; se verificaron permisos del volumen `hf_cache` y visibilidad de `unanswered_questions.csv` en el host |
+| **Registro de preguntas sin respuesta** | Preguntas fuera de alcance enviadas al bot con el contenedor levantado; se inspeccionó `unanswered_questions.csv` directamente en el host para confirmar que se escribían las entradas correctamente |
+| **Reindexación tras eliminar y re-agregar archivos** | Se retiraron archivos de `knowledge_base/`, se ejecutó `/reindex` y se verificó que desaparecieron de `/fuentes`; luego se re-agregaron, se ejecutó `/reindex` y se confirmó que volvieron a aparecer |
 
 ---
 

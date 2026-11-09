@@ -103,9 +103,28 @@ Consulta [`.env.example`](.env.example) para ver todas las variables con descrip
 
 ## Ejecución
 
+### Opción A — Python directo
+
 ```bash
 python -m src.main
 ```
+
+### Opción B — Docker (recomendado, no requiere Python instalado)
+
+```bash
+# Primera vez: crea el archivo de preguntas sin respuesta (requerido por Docker)
+echo "" > unanswered_questions.csv
+
+# Construye la imagen e inicia el contenedor
+docker compose up --build
+
+# Siguientes arranques (imagen ya construida)
+docker compose up
+```
+
+> **Primera construcción:** `sentence-transformers` descarga PyTorch (~1.5 GB) dentro del contenedor. Puede tardar 10–20 minutos según la conexión. Las ejecuciones siguientes usan el volumen `hf_cache` y son inmediatas.
+
+El archivo `unanswered_questions.csv` se actualiza en tu máquina en tiempo real — puedes abrirlo con Excel o cualquier editor mientras el bot corre.
 
 El bot indexa automáticamente los documentos de `knowledge_base/` y queda a la espera de mensajes.
 La terminal mostrará logs en formato JSON con el estado de cada operación.
@@ -177,7 +196,7 @@ pytest tests/ -v
 | [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Diagrama de componentes, flujos y estructura de carpetas |
 | [docs/DECISIONES.md](docs/DECISIONES.md) | Registro de 8 decisiones de arquitectura (ADR) |
 | [docs/USO_IA.md](docs/USO_IA.md) | Transparencia sobre el uso de herramientas de IA |
-| [docs/EVALUACION.md](docs/EVALUACION.md) | Evaluación de calidad del RAG con 10 preguntas |
+| [docs/EVALUACION.md](docs/EVALUACION.md) | Evaluación de calidad del RAG con 12 preguntas |
 | [docs/CRITERIO_TECNICO.md](docs/CRITERIO_TECNICO.md) | Reflexiones técnicas y análisis de producción |
 | [docs/TRAZABILIDAD.md](docs/TRAZABILIDAD.md) | Matriz de trazabilidad RF→tarea→commit→prueba→estado |
 | [.env.example](.env.example) | Plantilla de configuración completa y comentada |

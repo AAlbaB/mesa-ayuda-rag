@@ -20,7 +20,9 @@ _NO_INFO_MESSAGE = (
 )
 
 
-def build_llm(provider: str, model: str, api_key: str, temperature: float, max_tokens: int) -> BaseChatModel:
+def build_llm(
+    provider: str, model: str, api_key: str, temperature: float, max_tokens: int
+) -> BaseChatModel:
     """Instancia el LLM según el proveedor configurado.
 
     Permite cambiar de proveedor solo modificando LLM_PROVIDER en .env.
@@ -53,6 +55,23 @@ def build_llm(provider: str, model: str, api_key: str, temperature: float, max_t
             max_output_tokens=max_tokens,
         )
     raise ValueError(f"LLM_PROVIDER no soportado: {provider!r}. Usa openai, anthropic o google.")
+
+
+# Señales que indican que el LLM no pudo responder con el contexto dado.
+# Se usan en minúsculas para comparación case-insensitive.
+_NO_INFO_SIGNALS = (
+    "no tengo información",
+    "no hay información",
+    "no encuentro información",
+    "no está disponible en los documentos",
+    "no se encuentra en los documentos",
+)
+
+
+def _answer_has_no_info(answer: str) -> bool:
+    """Retorna True si la respuesta del LLM indica que no tiene información."""
+    lower = answer.lower()
+    return any(signal in lower for signal in _NO_INFO_SIGNALS)
 
 
 class RAGChain:
@@ -92,7 +111,14 @@ class RAGChain:
             logger.exception("Error al llamar al LLM")
             raise
 
-        sources = list({chunk.format_source() for chunk in chunks})
+        # Solo cita fuentes si el LLM realmente respondió con información.
+        # Cuando el modelo declara que no tiene info, las fuentes recuperadas
+        # no responden la pregunta y mostrarlas es engañoso (caso documentado en
+        # EVALUACION.md P10 / Ajuste 3).
+        if _answer_has_no_info(answer):
+            sources = []
+        else:
+            sources = list({chunk.format_source() for chunk in chunks})
         return answer, sources
 
     # ── Internos ──────────────────────────────────────────────────────────────

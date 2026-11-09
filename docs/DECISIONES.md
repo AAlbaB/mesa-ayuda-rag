@@ -120,13 +120,13 @@ Los LLMs tienden a generar información plausible pero falsa cuando no tienen su
 - Fine-tuning del modelo con ejemplos de "no sé": sobrepasa el alcance
 
 **Decisión**  
-Doble barrera: `SIMILARITY_THRESHOLD` (primera línea) + `system_prompt.md` restrictivo (segunda línea).
+Triple barrera: `SIMILARITY_THRESHOLD` (primera línea) + `system_prompt.md` restrictivo (segunda línea) + detección de respuestas sin información en código (tercera línea).
 
 **Justificación**  
-Primera barrera: si ningún chunk supera `SIMILARITY_THRESHOLD` (0.30), la respuesta es un mensaje predefinido que nunca llega al LLM, eliminando completamente el riesgo de alucinación. Segunda barrera: el system prompt en `prompts/system_prompt.md` instruye explícitamente al modelo a responder "No tengo información sobre ese tema" si la respuesta no está en los fragmentos provistos. El prompt no está hardcodeado; `SYSTEM_PROMPT_PATH` permite actualizarlo sin modificar código. Se incluyó además detección de 7 patrones de prompt injection en el input del usuario (con log de auditoría, sin bloquear el mensaje).
+Primera barrera: si ningún chunk supera `SIMILARITY_THRESHOLD` (0.30), la respuesta es un mensaje predefinido que nunca llega al LLM, eliminando completamente el riesgo de alucinación. Segunda barrera: el system prompt instruye explícitamente al modelo a responder "No tengo información sobre ese tema" si los fragmentos no responden la pregunta. Tercera barrera (añadida tras prueba real): `_answer_has_no_info()` en `chain.py` detecta señales lingüísticas en la respuesta del LLM y retorna `sources=[]` cuando el modelo declara no tener información, evitando que se muestren fuentes de chunks recuperados pero irrelevantes. Este caso ocurre cuando el retriever pasa el threshold con documentos temáticamente cercanos pero el LLM detecta que no responden la pregunta. El prompt no está hardcodeado; `SYSTEM_PROMPT_PATH` permite actualizarlo sin modificar código. Se incluyó además detección de 7 patrones de prompt injection en el input del usuario (con log de auditoría, sin bloquear el mensaje).
 
 **Trade-offs aceptados**  
-Un umbral muy alto (ej. 0.70) puede filtrar preguntas legítimamente relacionadas cuyo vocabulario difiere del documento. Se eligió 0.30 como valor conservador para no perder preguntas válidas. El prompt restrictivo introduce algo de rigidez: el bot puede responder "no tengo información" a preguntas que podría deducir con conocimiento general; esto es intencional y está documentado como limitación conocida.
+Un umbral muy alto (ej. 0.70) puede filtrar preguntas legítimamente relacionadas cuyo vocabulario difiere del documento. Se eligió 0.30 como valor conservador. La función `_answer_has_no_info()` usa coincidencia de subcadenas en español; si el modelo responde en otro idioma o con una frase no cubierta, las fuentes se mostrarían igual — es una heurística, no una garantía. Para mayor robustez se podría usar un clasificador secundario o una respuesta estructurada del LLM, pero sobrepasa el alcance de esta prueba.
 
 ---
 
@@ -169,3 +169,87 @@ Con 20 parámetros, separar en dos archivos agrega complejidad (dos archivos a g
 
 **Trade-offs aceptados**  
 El `.env` crece conforme se agregan parámetros, mezclando secretos con configuración operacional. Para un proyecto en producción, separar secretos (`.env` con permisos restrictivos) de configuración (`config.yaml` versionable sin secretos) mejoraría la seguridad operativa. Se documenta como mejora para producción en `CRITERIO_TECNICO.md §3`.
+
+---
+
+## D-09 Estrategia de contenedorización (Docker)
+
+**Contexto**  
+El evaluador necesita ejecutar el bot en su propia máquina. La instalación directa con Python exige gestionar versiones, descargar PyTorch (~1.5 GB) en el entorno del host y configurar el entorno virtual manualmente. Además, `sentence-transformers` descarga su modelo al `~/.cache/huggingface/` del sistema, lo que puede sorprender al evaluador. Docker elimina estas fricciones y garantiza reproducibilidad.
+
+**Opciones consideradas**
+- Sin Docker: `python -m src.main` directamente en el host (ya implementado como opción A).
+- **Dockerfile + docker-compose**: imagen autocontenida; volúmenes para persistencia del índice y caché de embeddings.
+- Imagen base `python:3.11` (completa, ~1 GB) vs. `python:3.11-slim` (~130 MB).
+- Usuario `root` dentro del contenedor vs. usuario sin privilegios.
+
+**Decisión**  
+`python:3.11-slim` como imagen base + `docker-compose.yml` con cuatro volúmenes + usuario `botuser` sin root.
+
+**Justificación**  
+`slim` recorta ~870 MB respecto a la imagen completa sin afectar la compatibilidad con las dependencias del proyecto (solo se requiere instalar `libgomp1` para el runtime OpenMP de PyTorch). Los volúmenes cumplen roles distintos:
+
+| Volumen | Tipo | Propósito |
+|---|---|---|
+| `knowledge_base/` | bind mount `:ro` | El evaluador agrega documentos desde el host sin reconstruir la imagen |
+| `prompts/` | bind mount `:ro` | El system prompt se puede ajustar sin reconstruir |
+| `chroma_data` | nombrado | El índice vectorial persiste entre `docker compose down / up` |
+| `hf_cache` | nombrado | El modelo de embeddings (~420 MB) se descarga una sola vez |
+
+Ejecutar como `botuser` (sin root) aplica el principio de mínimo privilegio: si hubiera una vulnerabilidad de ejecución de código, el proceso no tendría permisos de root en el host (con namespacing de usuario habilitado en Docker).
+
+El `.env` del host se pasa al contenedor vía `env_file`, por lo que el comportamiento de `Pydantic Settings` es idéntico al de la ejecución directa: las variables de entorno tienen precedencia sobre el archivo `.env` dentro del contenedor.
+
+**Trade-offs aceptados**  
+La primera construcción descarga PyTorch dentro del contenedor (~1.5 GB), lo que puede tardar 10–20 minutos. Las reconstrucciones subsiguientes sin cambios en `pyproject.toml` usan el layer cacheado de `pip install` y son inmediatas. El volumen `hf_cache` evita re-descargar el modelo de embeddings en cada `docker compose down / up`. El usuario sin root puede generar conflictos de permisos en bind mounts en Linux si el UID del host no coincide con el del contenedor; en Docker Desktop para Windows/Mac esto no ocurre porque el motor maneja la traducción de permisos automáticamente.
+
+---
+
+## D-10 Estrategia de ramas y pull requests (Gitflow)
+
+**Contexto**  
+El documento de evaluación indica que el uso de ramas y pull requests es opcional, pero que si se usan, debe poder explicarse su propósito. Usar Git sin estrategia de ramas es perfectamente válido para un proyecto unipersonal de esta escala; la decisión de adoptar Gitflow tiene un costo de disciplina que debe justificarse con beneficios concretos.
+
+**Opciones consideradas**
+- **Rama única (`master`):** commits directos, sin branches adicionales. Mínimo overhead, adecuado para exploraciones rápidas.
+- **Feature branches sin estructura fija:** ramas ad-hoc sin convención, merge directo a `master`.
+- **Gitflow (`feature/*` → `develop` → `master`):** rama de integración permanente (`develop`) + ramas de característica aisladas + `master` como rama de entrega estable.
+
+**Decisión**  
+Gitflow: `feature/*` → `develop` → `master`, con merges `--no-ff` para preservar la historia de ramas, y pull requests como puerta de revisión antes de integrar a `master`.
+
+**Justificación**  
+Cada rama `feature/*` aisla un conjunto de cambios asociado a una tarea (`T-xx`) o grupo de requisitos funcionales (`RF-xx`). Esto produce tres beneficios concretos:
+
+1. **Trazabilidad:** el nombre de la rama y el título del PR vinculan directamente el cambio con la tarea y el requisito. El evaluador puede navegar de un RF en `spec.md` a la rama, al PR y al commit que lo implementó, sin reconstruir el contexto.
+2. **Protección de la rama de entrega:** `master` solo recibe código revisado y probado. Durante el desarrollo, `develop` puede tener trabajo incompleto; `master` siempre representa un estado entregable. Para un evaluador que clona el repositorio, `master` es la rama que debe funcionar de inmediato.
+3. **El PR como artefacto de entrega:** el cuerpo de cada pull request documenta qué cambió, por qué y cómo verificarlo. Para una prueba técnica, ese cuerpo es parte de la documentación del proyecto — no solo un trámite de fusión.
+
+El overhead de Gitflow (crear rama, abrir PR, hacer merge) es bajo en un proyecto unipersonal comparado con el valor que genera: un historial legible, una `master` estable y un registro auditado de decisiones de integración.
+
+**Trade-offs aceptados**  
+Para un proyecto de este tamaño, Gitflow agrega pasos que en equipos grandes tienen sentido para coordinar trabajo paralelo, pero que aquí resuelven un problema diferente: disciplina de entrega y legibilidad del historial. El trade-off consciente es que cada feature requiere al menos tres comandos adicionales (`checkout -b`, `push`, `gh pr create`) que en un commit directo no existirían. Se acepta este costo porque el resultado — trazabilidad entre requisito, rama, PR y commit — aporta directamente al criterio de evaluación del proyecto.
+
+---
+
+## D-11 Modo de operación del bot: polling vs. webhook
+
+**Contexto**  
+`python-telegram-bot` soporta dos modos para recibir mensajes: polling (el bot consulta periódicamente a la API de Telegram) y webhook (Telegram envía los mensajes a un endpoint HTTPS del servidor). El documento de evaluación no especifica ninguno de los dos; ambos son técnicamente válidos.
+
+**Opciones consideradas**
+- **Webhook:** Telegram empuja los mensajes al servidor en tiempo real. Requiere un servidor con IP/dominio público, certificado TLS válido y un reverse proxy (nginx, Caddy) o un túnel (ngrok). Latencia mínima.
+- **Polling (`run_polling()`):** El bot consulta la API de Telegram cada pocos segundos. No requiere infraestructura expuesta. Latencia de 1–2 segundos, aceptable para un asistente interno.
+
+**Decisión**  
+Polling con `Application.run_polling()`.
+
+**Justificación**  
+El criterio determinante fue la facilidad de setup para el evaluador. Con polling, ejecutar el bot requiere solo un token válido en `.env` y un comando (`python -m src.main` o `docker compose up`); no hay dependencias de infraestructura externa. Webhook agregaría como mínimo: un dominio o IP pública, un certificado TLS (Let's Encrypt o autofirmado registrado en Telegram), y la configuración de un reverse proxy — pasos que no aportan al criterio evaluado y que varían según el entorno del evaluador.
+
+Para el volumen de usuarios de una mesa de ayuda interna (decenas de usuarios, no miles de mensajes por segundo), la diferencia de latencia entre polling y webhook es imperceptible. El modo polling es el estándar en proyectos de desarrollo, pruebas técnicas y despliegues de baja escala.
+
+La decisión está documentada como supuesto **A-02** en `specs/spec.md` y como exclusión consciente en la sección "Fuera de alcance" del mismo documento.
+
+**Trade-offs aceptados**  
+Polling no es adecuado para producción a escala: mantiene una conexión persistente con la API de Telegram y el bot debe estar activo para recibir mensajes (no hay entrega diferida). Para producción, la migración a webhook es directa — `run_polling()` se reemplaza por `run_webhook()` más la configuración del servidor — y está documentada como mejora en `CRITERIO_TECNICO.md §3`.

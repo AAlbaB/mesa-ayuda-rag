@@ -265,7 +265,7 @@ Todas las variables de la tabla siguiente deben estar en `.env` (nunca en códig
 | A-01 | El historial conversacional no persiste entre reinicios del bot (en memoria). Si se requiere persistencia, es una mejora futura. |
 | A-02 | El bot opera en modo polling (no webhook). Adecuado para entornos de desarrollo y prueba. |
 | A-03 | El evaluador tiene acceso a internet para descargar el modelo de embeddings en el primer arranque (~420 MB, descarga automática de HuggingFace). |
-| A-04 | Se asume Python 3.11+ instalado en el entorno de ejecución. |
+| A-04 | El entorno de ejecución es Python 3.11+ instalado en el host, **o** Docker Desktop — ambas opciones están documentadas en el README. Con Docker, el evaluador no necesita Python instalado. |
 | A-05 | Los documentos en `knowledge_base/` pueden estar en español o inglés. El modelo de embeddings elegido es multilingüe. |
 | A-06 | "Usuario autorizado" se identifica únicamente por Telegram user_id numérico. No hay gestión de roles adicional. |
 | A-07 | El evaluador proveerá su propio `TELEGRAM_BOT_TOKEN` y `LLM_API_KEY`. El proveedor por defecto es OpenAI; se documentan los proveedores alternativos soportados. |

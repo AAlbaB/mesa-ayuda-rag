@@ -23,14 +23,17 @@ class RetrievedChunk:
 
     @property
     def source(self) -> str:
+        """Nombre de archivo del documento origen."""
         return self.document.metadata.get("source", "desconocido")
 
     @property
     def page(self) -> int:
+        """Número de página; -1 si el formato no tiene páginas."""
         return self.document.metadata.get("page", -1)
 
     @property
     def content(self) -> str:
+        """Texto del fragmento recuperado."""
         return self.document.page_content
 
     def format_source(self) -> str:

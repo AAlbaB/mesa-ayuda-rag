@@ -4,32 +4,25 @@
 
 ## 1. ¿Qué fue lo más difícil de la solución y cómo lo resolviste?
 
-El problema más complejo fue el **conflicto de versiones entre las dependencias de LangChain y ChromaDB**.
+Lo más difícil no fue el código sino entender el problema completo y aplicar correctamente la metodología exigida: **Spec Driven Development (SDD)**.
 
-LangChain 0.3.x requiere `langchain-core 0.3.x`. Sin embargo, instalar `langchain-huggingface` (el paquete oficial para embeddings de HuggingFace) actualiza automáticamente `langchain-core` a 1.x, lo que rompe silenciosamente `langchain 0.3.x`. El mismo problema ocurrió con `langchain-chroma` y con `chromadb 1.5.9` (que eliminó la API de Chroma que usa `langchain-community`).
+El documento de la prueba requería que las especificaciones existieran y estuvieran commiteadas *antes* de escribir cualquier línea de código. Eso implicó varios retos en cadena: leer e interpretar todos los requisitos funcionales y no funcionales, traducirlos a historias de usuario con criterios de aceptación verificables, definir cada tarea vinculada a su requisito (T-00..T-38 → RF-01..RF-10) y estructurar el orden de implementación para que los deseables no bloquearan los obligatorios.
 
-La solución requirió tres pasos:
-1. **Identificar el origen**: comparar las versiones instaladas antes y después del conflicto con `pip show`.
-2. **Cambiar la estrategia de imports**: en lugar de usar los paquetes `langchain-huggingface` y `langchain-chroma` (que arrastran dependencias incompatibles), usar `langchain_community.embeddings.HuggingFaceEmbeddings` y `langchain_community.vectorstores.Chroma`, que son compatibles con `langchain-core 0.3.x`.
-3. **Pinear la versión de ChromaDB**: agregar `chromadb>=0.5.0,<1.0.0` en `pyproject.toml` para evitar que `pip` instale la versión 1.x con API incompatible.
+El patrón era estricto: un solo commit con specs y código mezclados invalida la entrega. Eso obligó a pensar primero, implementar después, y registrar cada decisión de arquitectura en el momento en que se tomaba, no al final como suele hacerse.
 
-Adicionalmente, para que los tests unitarios puedan ejecutarse sin descargar PyTorch (~1.5 GB), se movieron los imports de `HuggingFaceEmbeddings` y `Chroma` a métodos internos (lazy imports), de forma que importar el módulo `indexer.py` no activa la carga del modelo.
-
-**Segundo hallazgo crítico — Pydantic Settings v2 y el parseo de IDs numéricos**
-
-Durante la prueba real del bot en Telegram se detectó que, a pesar de que el `.env` tenía el ID correcto, el bot denegaba el acceso a todos los usuarios. El diagnóstico con `python -c "from src.config import get_settings; s = get_settings(); print(s.allowed_user_ids)"` retornó `[]`.
-
-La causa fue un comportamiento documentado pero no obvio de Pydantic Settings v2: antes de invocar los `field_validator`, el framework deserializa cada valor del `.env` como JSON. `json.loads("9193063212")` retorna un `int`, no un `str`, de modo que el validador `_parse_int_list` recibía un entero en lugar de la cadena esperada y retornaba `[]` silenciosamente. La corrección fue añadir el caso `isinstance(v, int): return [v]` al inicio del validador. Sin este caso, con un único ID en la lista, nadie podía acceder al bot.
+Lo resolví apoyándome en Claude Code: primero en modo chat para entender y desglosar los requisitos del documento, luego en modo CLI para ejecutar cada fase. La clave fue ir punto por punto — entender qué pedía cada RF, definir un criterio de aceptación concreto y verificable, y solo entonces asignar una tarea con estado y referencia al requisito correspondiente.
 
 ---
 
 ## 2. ¿Qué decisión tomarías distinto si empezaras de nuevo?
 
-**Pinear todas las versiones exactas desde el primer día.**
+**La decisión que tomaría distinta es documentarme mejor sobre la metodología SDD antes de empezar, y construir una herramienta especializada para ejecutarla.**
 
-En `pyproject.toml` usé rangos (`langchain>=0.3.0,<0.4.0`) que son razonables en teoría, pero en la práctica el ecosistema LangChain actualiza versiones con cambios de API incompatibles con más frecuencia de lo esperado. Con versiones exactas (`langchain==0.3.14`, `langchain-core==0.3.29`) habría evitado las horas invertidas en resolver conflictos de dependencias.
+Durante el proyecto aprendí SDD sobre la marcha, lo que implicó ajustes y correcciones al avance. Con más tiempo, habría creado una **skill o agente dedicado a SDD** en Claude Code: una herramienta a la que se le entrega la lista de requisitos funcionales y no funcionales del proyecto, y que guía cada etapa de forma estructurada — análisis, especificación, desglose en tareas, implementación y documentación — retroalimentándose con el avance real del proyecto.
 
-**Consideraría también FAISS en lugar de ChromaDB** para la primera versión. FAISS es más simple (un archivo en disco, sin servidor), no tiene el problema de versiones de ChromaDB y para un índice pequeño (<10K documentos) tiene mejor latencia. ChromaDB añade valor en producción (filtros por metadata, actualización incremental sin reconstruir el índice completo), pero para la prueba técnica FAISS habría sido más directo.
+Este agente iría más allá de la estructura básica. Según el lenguaje y las tecnologías elegidas, incluiría etapas adicionales como: cobertura mínima de código por módulo, revisión de identificación (naming conventions, type hints, docstrings), análisis estático con el linter configurado, y validación de que cada tarea commiteada cierra efectivamente el criterio de aceptación que decía cerrar.
+
+La idea es que el agente no solo genere la documentación inicial sino que la mantenga viva: cuando se detecta un ajuste o una corrección durante la implementación, actualiza automáticamente la tarea y registra el motivo, manteniendo la trazabilidad entre requisito, tarea, commit y prueba sin depender de que el desarrollador lo haga manualmente al final.
 
 ---
 
@@ -46,25 +39,26 @@ En `pyproject.toml` usé rangos (`langchain>=0.3.0,<0.4.0`) que son razonables e
 | **Observabilidad** | Tracing de trazas completas (LangSmith o Langfuse), métricas en Prometheus | Para diagnosticar latencias y detectar regresiones en calidad de respuesta |
 | **Seguridad** | Webhook (en lugar de polling) + HTTPS + validación de firma de Telegram | Polling no es adecuado para producción; webhook con firma evita peticiones falsas |
 | **Calidad del RAG** | Re-ranking (CrossEncoder) después del retrieval inicial | Mejora la precisión cuando el índice es grande y los embeddings no capturan fineza semántica |
+| **Control de acceso** | Base de datos de usuarios con roles y panel de administración | La lista blanca en `.env` no escala; agregar o revocar usuarios requiere reiniciar el bot |
+| **Calidad de documentos** | Pipeline de validación antes de indexar: detectar PDFs escaneados sin OCR, duplicados y archivos corruptos | Con miles de documentos, un archivo mal indexado contamina los resultados de retrieval |
+| **Infraestructura en la nube** | Migrar a servicios administrados: Cloud Storage o S3 para `knowledge_base/`, Vertex AI o OpenSearch para el vector store, Cloud Run o ECS para el bot | Elimina la gestión de servidores, habilita autoescalado y garantiza disponibilidad sin intervención manual |
+| **CI/CD** | Pipeline automatizado (GitHub Actions o Cloud Build): lint → tests → build de imagen Docker → deploy al entorno correspondiente según la rama | Garantiza que ningún cambio llega a producción sin pasar por las pruebas y el proceso de revisión |
 
 ---
 
 ## 4. ¿Cuáles son los principales riesgos y cómo los mitigarías?
 
-**Seguridad**
-- *Prompt injection*: un usuario malicioso puede intentar manipular el bot con instrucciones como "ignora las reglas anteriores y...". Mitigación actual: 7 patrones regex detectados (con log de auditoría) + regla explícita en el system prompt que prohíbe obedecer instrucciones contradictorias del usuario. Para producción: añadir un modelo clasificador de intención previo al retrieval.
-- *Credentials en git*: mitigado con `.gitignore` que excluye `.env`, y validado antes de cada commit.
-
-**Privacidad**
-- Los documentos de RRHH pueden contener información sensible (salarios, casos disciplinarios). ChromaDB persiste en disco sin cifrado. Mitigación: cifrado de disco del servidor, acceso restringido al directorio `chroma_db/`.
-- Los user_ids de Telegram se hashean con HMAC-SHA256 en los logs, no se almacenan en texto plano.
-
-**Costos**
-- Sin límite de uso, el costo de API puede escalar inesperadamente. Mitigación actual: `RATE_LIMIT_PER_MINUTE` limita mensajes por usuario. Para producción: alertas de gasto en el proveedor de LLM + presupuesto mensual máximo.
-
-**Calidad de respuestas**
-- El modelo de embeddings local puede no capturar jerga interna de la organización (siglas, apodos de sistemas). Mitigación: ajustar `SIMILARITY_THRESHOLD` hacia abajo para ser más permisivo, y complementar con documentos de glosario en `knowledge_base/`.
-- Fragmentos muy cortos pueden quedar sin contexto suficiente. Mitigación: ajustar `CHUNK_SIZE` y `CHUNK_OVERLAP` para el tipo de documentos de la organización.
+| Riesgo | Mitigación actual | Mitigación en producción |
+|---|---|---|
+| **Prompt injection** | 7 patrones regex con log de auditoría + regla explícita en el system prompt | Añadir un modelo clasificador de intención previo al retrieval |
+| **Credenciales en git** | `.gitignore` excluye `.env`; verificado con `git log --all --full-history -- .env` | Secret scanning automatizado en el pipeline de CI |
+| **Privacidad de documentos** | ChromaDB persiste en disco sin cifrado; acceso restringido al directorio `chroma_db/` | Cifrado en reposo del volumen + control de acceso por rol al vector store |
+| **User IDs en logs** | HMAC-SHA256 anonimiza el `user_id` en todos los eventos del log | Mantener el mismo mecanismo; auditoría periódica de los logs |
+| **Costos de API** | `RATE_LIMIT_PER_MINUTE` limita mensajes por usuario | Alertas de gasto en el proveedor de LLM + presupuesto mensual máximo |
+| **Calidad de embeddings** | `SIMILARITY_THRESHOLD` configurable; documentos de glosario en `knowledge_base/` | Re-ranking con CrossEncoder; fine-tuning del modelo con jerga interna |
+| **Chunks sin contexto** | `CHUNK_SIZE` y `CHUNK_OVERLAP` configurables en `.env` | Ajuste por tipo de documento tras análisis de las preguntas sin respuesta |
+| **Disponibilidad** | — | Supervisión del proceso con reinicio automático (systemd/Docker restart policy) + alerta ante caída |
+| **Obsolescencia de documentos** | — | Versionado de documentos con fecha de vigencia en los metadatos; alerta cuando un documento supera N días sin revisión |
 
 ---
 
@@ -88,7 +82,7 @@ Configuración por defecto: `gpt-4o-mini`, `RETRIEVAL_TOP_K=4`, `HISTORY_LENGTH=
 |---|---|
 | Respuesta del LLM | ~200 |
 
-**Precio GPT-4o-mini** (nov 2026): $0.15 / 1M tokens input + $0.60 / 1M tokens output.
+**Precio GPT-4o-mini** (según tarifa vigente al momento de la entrega): $0.15 / 1M tokens input + $0.60 / 1M tokens output.
 
 ```
 Costo por consulta = (2.090 × 0.15 / 1.000.000) + (200 × 0.60 / 1.000.000)
@@ -119,6 +113,7 @@ Costo por consulta = (2.090 × 0.15 / 1.000.000) + (200 × 0.60 / 1.000.000)
 ## 7. ¿Cómo mediría la organización si el asistente está generando valor?
 
 **Métricas operacionales** (sin infraestructura adicional):
+- **Adopción**: usuarios activos por semana. Si nadie usa el bot, todas las demás métricas son irrelevantes. Medible con los logs existentes contando `user_id_hash` únicos por período.
 - **Tasa de respuesta fundamentada**: porcentaje de consultas respondidas con fragmentos recuperados vs. mensaje de "no tengo información". Un aumento en "no tengo información" indica que faltan documentos en la base de conocimiento.
 - **Volumen de preguntas sin respuesta** (`unanswered_questions.csv`): qué temas no están cubiertos en `knowledge_base/`. Alimenta directamente la priorización de nuevos documentos.
 
@@ -131,4 +126,4 @@ Costo por consulta = (2.090 × 0.15 / 1.000.000) + (200 × 0.60 / 1.000.000)
 - **Tasa de seguimiento**: si el usuario hace una pregunta de seguimiento inmediatamente después, la primera respuesta probablemente fue incompleta o poco clara.
 
 **Revisión periódica** (trimestral):
-- Muestrear 20 conversaciones aleatorias del mes y evaluar manualmente si las respuestas son correctas, completas y citan la fuente adecuada. Comparar contra el contenido de los documentos.
+- El administrador de mesa de ayuda muestrea 20 conversaciones aleatorias del mes y evalúa si las respuestas son correctas, completas y citan la fuente adecuada. Los hallazgos se traducen en dos acciones concretas: actualizar o agregar documentos en `knowledge_base/` para cubrir las brechas detectadas, y ajustar `SIMILARITY_THRESHOLD` o `CHUNK_SIZE` si hay patrones de respuestas incorrectas por retrieval deficiente.
