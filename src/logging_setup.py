@@ -21,6 +21,7 @@ class _JSONFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
+        """Serializa el LogRecord a una línea JSON con los campos estándar."""
         entry: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,

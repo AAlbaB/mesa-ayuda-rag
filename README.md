@@ -196,7 +196,7 @@ pytest tests/ -v
 | [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Diagrama de componentes, flujos y estructura de carpetas |
 | [docs/DECISIONES.md](docs/DECISIONES.md) | Registro de 8 decisiones de arquitectura (ADR) |
 | [docs/USO_IA.md](docs/USO_IA.md) | Transparencia sobre el uso de herramientas de IA |
-| [docs/EVALUACION.md](docs/EVALUACION.md) | Evaluación de calidad del RAG con 10 preguntas |
+| [docs/EVALUACION.md](docs/EVALUACION.md) | Evaluación de calidad del RAG con 12 preguntas |
 | [docs/CRITERIO_TECNICO.md](docs/CRITERIO_TECNICO.md) | Reflexiones técnicas y análisis de producción |
 | [docs/TRAZABILIDAD.md](docs/TRAZABILIDAD.md) | Matriz de trazabilidad RF→tarea→commit→prueba→estado |
 | [.env.example](.env.example) | Plantilla de configuración completa y comentada |

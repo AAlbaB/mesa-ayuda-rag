@@ -82,31 +82,25 @@ Para tareas grandes (ej. `handlers.py` con todo el pipeline RAG), el desarrollad
 - **Alcance acotado:** terminé con “Empieza solo con la FASE 0” para evitar que escribiera código antes de revisar el plan.
 - **Origen:** lo redacté con ayuda de Claude (chat) a partir del documento de requisitos y lo ejecuté en Claude Code.
 
-### Prompt 2 — Diagnóstico de bug durante la prueba real
-
-> *"El bot arranca bien pero rechaza al usuario aunque el ID correcto está en el .env. Ejecuta: `.venv/Scripts/python -c "from src.config import get_settings; s = get_settings(); print('allowed:', s.allowed_user_ids)"`"*
-
-**Por qué así:** En lugar de revisar el código a ciegas, el prompt aisló el problema en una sola variable: si `get_settings()` devuelve `[]` con el `.env` presente, el bug está en el parseo de la config, no en el bot. Esa salida (`allowed: []`) fue suficiente para identificar que Pydantic Settings v2 pre-parsea el valor como JSON (`json.loads("9193063212") == 9193063212`, un `int`, no un `str`) antes de invocar el validador de campo. El prompt de diagnóstico previno varios ciclos de prueba y error en el código del bot.
-
-### Prompt 3 — Diagnóstico del bug crítico de ChromaDB
+### Prompt 2 — Diagnóstico del bug crítico de ChromaDB
 
 > *"El bot arranca sin errores pero ante cualquier pregunta responde siempre 'No tengo información sobre ese tema', incluso para preguntas literales del documento. Los logs muestran que retrieve() devuelve []. Revisa indexer.py: ¿está configurado hnsw:space=cosine en la colección de ChromaDB? ¿Los scores de similarity_search_with_relevance_scores son positivos?"*
 
 **Por qué así:** Fue el bug más crítico del proyecto — sin `hnsw:space=cosine`, ChromaDB usa distancia L2 y los scores son negativos, lo que hace que el filtro por `SIMILARITY_THRESHOLD` descarte todos los chunks. El prompt va directo a la causa raíz con preguntas verificables: si los scores son negativos, el espacio de similitud está mal configurado.
 
-### Prompt 4 — Eliminación de fuentes duplicadas entre LLM y handler
+### Prompt 3 — Eliminación de fuentes duplicadas entre LLM y handler
 
 > *"El bot muestra las fuentes dos veces: el LLM las cita dentro del texto porque el system prompt se lo pide, y handlers.py las añade al pie del mensaje. Elimina la instrucción de citar fuentes de system_prompt.md y deja que solo el handler las añada en HTML."*
 
 **Por qué así:** Identificar una responsabilidad duplicada entre el prompt de sistema y el código requiere ver ambos artefactos a la vez. La solución con una sola instrucción coordinó cambios en dos archivos distintos (`system_prompt.md` y `handlers.py`) sin ambigüedad sobre cuál debía ceder.
 
-### Prompt 5 — Bug report por comportamiento observable (reindexación)
+### Prompt 4 — Bug report por comportamiento observable (reindexación)
 
 > *"Cuando saco archivos del knowledge_base y uso reindex funciona correctamente porque los saca y no salen en fuentes, pero cuando los vuelvo a agregar a la carpeta y uso reindex no los toma."*
 
 **Por qué así:** El prompt describe el síntoma exacto observado, no una hipótesis sobre el código. Claude Code trazó la causa raíz hasta `index_state.json`: al eliminar un archivo, los chunks se purgaban de ChromaDB pero la entrada del estado no se limpiaba; al re-agregar el mismo archivo, el MD5 coincidía y no se detectaba como nuevo. La corrección requirió dos cambios coordinados en `pipeline.py`.
 
-### Prompt 6 — Diagnóstico de bugs por log de error y comportamiento del contenedor
+### Prompt 5 — Diagnóstico de bugs por log de error y comportamiento del contenedor
 
 > *[Logs de Docker con `PermissionError: [Errno 13] Permission denied: '/home/botuser/.cache/huggingface/hub'`]*
 >

@@ -98,6 +98,7 @@ class BotHandlers:
     # ── Comandos (RF-06) ──────────────────────────────────────────────────────
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Responde al comando /start con el mensaje de bienvenida (RF-06)."""
         user_id = update.effective_user.id  # type: ignore[union-attr]
         if not self._check_access(user_id):
             await update.message.reply_text(_DENIED_MSG)  # type: ignore[union-attr]
@@ -115,6 +116,7 @@ class BotHandlers:
         )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Responde al comando /help con la lista de comandos disponibles (RF-06)."""
         user_id = update.effective_user.id  # type: ignore[union-attr]
         if not self._check_access(user_id):
             await update.message.reply_text(_DENIED_MSG)  # type: ignore[union-attr]
@@ -134,6 +136,7 @@ class BotHandlers:
         )
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Borra el historial conversacional del usuario vía /reset (RF-06)."""
         user_id = update.effective_user.id  # type: ignore[union-attr]
         if not self._check_access(user_id):
             await update.message.reply_text(_DENIED_MSG)  # type: ignore[union-attr]
@@ -143,6 +146,7 @@ class BotHandlers:
         await update.message.reply_text("✅ Historial de conversación borrado.")  # type: ignore[union-attr]
 
     async def fuentes(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Lista los documentos indexados actualmente vía /fuentes (RF-06)."""
         user_id = update.effective_user.id  # type: ignore[union-attr]
         if not self._check_access(user_id):
             await update.message.reply_text(_DENIED_MSG)  # type: ignore[union-attr]
