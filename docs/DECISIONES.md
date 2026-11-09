@@ -202,3 +202,30 @@ El `.env` del host se pasa al contenedor vía `env_file`, por lo que el comporta
 
 **Trade-offs aceptados**  
 La primera construcción descarga PyTorch dentro del contenedor (~1.5 GB), lo que puede tardar 10–20 minutos. Las reconstrucciones subsiguientes sin cambios en `pyproject.toml` usan el layer cacheado de `pip install` y son inmediatas. El volumen `hf_cache` evita re-descargar el modelo de embeddings en cada `docker compose down / up`. El usuario sin root puede generar conflictos de permisos en bind mounts en Linux si el UID del host no coincide con el del contenedor; en Docker Desktop para Windows/Mac esto no ocurre porque el motor maneja la traducción de permisos automáticamente.
+
+---
+
+## D-10 Estrategia de ramas y pull requests (Gitflow)
+
+**Contexto**  
+El documento de evaluación indica que el uso de ramas y pull requests es opcional, pero que si se usan, debe poder explicarse su propósito. Usar Git sin estrategia de ramas es perfectamente válido para un proyecto unipersonal de esta escala; la decisión de adoptar Gitflow tiene un costo de disciplina que debe justificarse con beneficios concretos.
+
+**Opciones consideradas**
+- **Rama única (`master`):** commits directos, sin branches adicionales. Mínimo overhead, adecuado para exploraciones rápidas.
+- **Feature branches sin estructura fija:** ramas ad-hoc sin convención, merge directo a `master`.
+- **Gitflow (`feature/*` → `develop` → `master`):** rama de integración permanente (`develop`) + ramas de característica aisladas + `master` como rama de entrega estable.
+
+**Decisión**  
+Gitflow: `feature/*` → `develop` → `master`, con merges `--no-ff` para preservar la historia de ramas, y pull requests como puerta de revisión antes de integrar a `master`.
+
+**Justificación**  
+Cada rama `feature/*` aisla un conjunto de cambios asociado a una tarea (`T-xx`) o grupo de requisitos funcionales (`RF-xx`). Esto produce tres beneficios concretos:
+
+1. **Trazabilidad:** el nombre de la rama y el título del PR vinculan directamente el cambio con la tarea y el requisito. El evaluador puede navegar de un RF en `spec.md` a la rama, al PR y al commit que lo implementó, sin reconstruir el contexto.
+2. **Protección de la rama de entrega:** `master` solo recibe código revisado y probado. Durante el desarrollo, `develop` puede tener trabajo incompleto; `master` siempre representa un estado entregable. Para un evaluador que clona el repositorio, `master` es la rama que debe funcionar de inmediato.
+3. **El PR como artefacto de entrega:** el cuerpo de cada pull request documenta qué cambió, por qué y cómo verificarlo. Para una prueba técnica, ese cuerpo es parte de la documentación del proyecto — no solo un trámite de fusión.
+
+El overhead de Gitflow (crear rama, abrir PR, hacer merge) es bajo en un proyecto unipersonal comparado con el valor que genera: un historial legible, una `master` estable y un registro auditado de decisiones de integración.
+
+**Trade-offs aceptados**  
+Para un proyecto de este tamaño, Gitflow agrega pasos que en equipos grandes tienen sentido para coordinar trabajo paralelo, pero que aquí resuelven un problema diferente: disciplina de entrega y legibilidad del historial. El trade-off consciente es que cada feature requiere al menos tres comandos adicionales (`checkout -b`, `push`, `gh pr create`) que en un commit directo no existirían. Se acepta este costo porque el resultado — trazabilidad entre requisito, rama, PR y commit — aporta directamente al criterio de evaluación del proyecto.
